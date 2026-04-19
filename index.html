@@ -1073,6 +1073,50 @@ const Robot = {
   }
 };
 
+/* ===== Intent Detection ===== */
+const intents = {
+  learn: {
+    keywords: ['learn', 'teach', 'how', 'what is', 'explain', 'help', 'tutorial', 'guide', 'understand', 'study', 'know', 'info', 'knowledge'],
+    animation: 'wave',
+    responses: [
+      "I'd love to help you learn! Start by exploring and asking questions. 📚",
+      "Curiosity is the best teacher — let's figure it out together! 🧠",
+      "Learning mode activated! What topic interests you? 🔬",
+      "Great question! The best way to learn AI is to experiment. 🚀"
+    ]
+  },
+  buy: {
+    keywords: ['buy', 'shop', 'price', 'cost', 'purchase', 'order', 'store', 'deal', 'product', 'sell', 'pay', 'subscribe'],
+    animation: 'jump',
+    responses: [
+      "Shopping mode! We're building cool stuff — stay tuned! 🛭",
+      "Nothing for sale yet, but big things are coming! 🌟",
+      "Our store is under construction — check back soon! 🛠️",
+      "Free robot entertainment for now — best deal around! 😄"
+    ]
+  },
+  experiment: {
+    keywords: ['try', 'test', 'experiment', 'play', 'build', 'create', 'make', 'code', 'hack', 'run', 'start', 'go', 'do'],
+    animation: 'dance',
+    responses: [
+      "Let's experiment! Try typing jump, run, wave, or dance! 🧪",
+      "Hands-on is the best way — let's build something! ✨",
+      "Experiment mode! Break things, learn things! 💡",
+      "I love making things — what should we create? 🔧"
+    ]
+  }
+};
+
+function detectIntent(text) {
+  const lower = text.toLowerCase();
+  for (const [name, intent] of Object.entries(intents)) {
+    if (intent.keywords.some(kw => lower.includes(kw))) {
+      return { name, ...intent };
+    }
+  }
+  return null;
+}
+
 /* ===== Command Execution ===== */
 function executeCommand() {
   const input = document.getElementById('command-input');
@@ -1085,9 +1129,19 @@ function executeCommand() {
 
   if (validCommands.includes(cmd)) {
     Robot.animate(cmd);
-  } else {
-    Robot.say(Robot.getResponse('unknown'));
+    return;
   }
+
+  // Try intent detection
+  const intent = detectIntent(cmd);
+  if (intent) {
+    const resp = intent.responses[Math.floor(Math.random() * intent.responses.length)];
+    Robot.animate(intent.animation);
+    setTimeout(() => Robot.say(resp), 200);
+    return;
+  }
+
+  Robot.say(Robot.getResponse('unknown'));
 }
 
 function quickCommand(cmd) {
