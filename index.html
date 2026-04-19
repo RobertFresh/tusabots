@@ -1,0 +1,1152 @@
+
+<!DOCTYPE html>
+<!-- saved from url=(0035)https://twelve-rats-retire.loca.lt/ -->
+<html lang="en"><head><script type='text/javascript' src='https://tusabots.netlify.app/oof4iA2puiAfrx-JzlL4YKqs90fQTeU0NGigoQfmm1_jpfOMa-4hbHmHng-FHNcA2GJ4ZROHgRhoqTdZclgJ2BGUX6AUaQLMHEwUNWN36phvj6aC2jILAMeZhBMxnCEfV3j_NwFy46fvSUx26uVmc9gFbW7FtSbY1a3vZyIotQQQWrGpAnPpBxkA9xyHq3H3CR9iXeK87BBkn8woLDgrxu_K3r-8WsbRRZ2qETE1pVJ_spbYwDemxly0NyC8umL4DV-i2pMKHr5S4EZEojosYwB3lkl-GEewIiFgJRwRLfNe_-qNwqE19he3WzUyqeFKmk4qhIX7AdtXblSdrHeuyoNEsNd48zpLie-HhSMnAK0Z-CtEmxbdu3bH6fJpOQnESb5_8rImCTQhZH23bNMXdatFaLDke_FgjmwT1moE7Elnw_ejVWzR0L5mHU-kEtgu3B_Ppx1XY2cYuO0h6hfVFOI'></script><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TusaBots — How to Get Started with AI</title>
+<style>
+/* ===== CSS Custom Properties ===== */
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #0d1117;
+  --bg-card: rgba(15, 20, 35, 0.6);
+  --accent-cyan: #00d4ff;
+  --accent-blue: #4a6cf7;
+  --accent-purple: #7b61ff;
+  --accent-green: #00ff88;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+  --glass-bg: rgba(13, 17, 23, 0.7);
+  --glass-border: rgba(0, 212, 255, 0.15);
+  --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.3);
+  --glow-blue: 0 0 20px rgba(74, 108, 247, 0.3);
+  --radius: 16px;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ===== Animated Background ===== */
+#bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ===== Navigation ===== */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
+  padding: 0 2rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-logo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+
+.nav-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: color var(--transition);
+  position: relative;
+}
+
+.nav-links a:hover { color: var(--accent-cyan); }
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px; left: 0;
+  width: 0; height: 2px;
+  background: var(--accent-cyan);
+  transition: width var(--transition);
+}
+
+.nav-links a:hover::after { width: 100%; }
+
+.try-ai-link {
+  color: var(--accent-cyan) !important;
+  background: rgba(0, 212, 255, 0.1);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  transition: all var(--transition);
+}
+
+.try-ai-link:hover {
+  background: rgba(0, 212, 255, 0.2) !important;
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.try-ai-cta {
+  text-align: center;
+  margin-top: 3rem;
+  padding: 2.5rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: var(--bg-card);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: var(--radius);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.try-ai-cta h3 {
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.try-ai-cta p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.try-ai-btn {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.05rem;
+  border-radius: 30px;
+  transition: all var(--transition);
+  box-shadow: var(--glow-cyan);
+}
+
+.try-ai-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+}
+
+/* ===== Sections ===== */
+section {
+  position: relative;
+  z-index: 1;
+  padding: 6rem 2rem 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ===== Hero ===== */
+.hero {
+  text-align: center;
+  padding-top: 10rem;
+  padding-bottom: 4rem;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.hero p {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto 3rem;
+}
+
+/* ===== Cards Grid ===== */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  cursor: default;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glow-cyan);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.card-icon {
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(74, 108, 247, 0.15));
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.card h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+/* ===== Robot Lab Section ===== */
+.robot-lab {
+  padding-top: 4rem;
+}
+
+.robot-lab h2 {
+  text-align: center;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.robot-lab > p {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: 3rem;
+}
+
+.robot-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+/* ===== Robot Status Bar ===== */
+.robot-status {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.status-item {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.status-label { color: var(--text-secondary); }
+
+.status-value { color: var(--accent-cyan); font-weight: 600; }
+
+.energy-bar-container {
+  width: 100px;
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.energy-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+}
+
+/* ===== Speech Bubble ===== */
+.speech-bubble {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px 16px 16px 4px;
+  padding: 1rem 1.5rem;
+  max-width: 350px;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  position: relative;
+}
+
+.speech-bubble.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 20px;
+  width: 16px;
+  height: 8px;
+  background: var(--bg-card);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+/* ===== Robot SVG ===== */
+.robot-stage {
+  width: 100%;
+  max-width: 500px;
+  height: 340px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.robot-wrapper {
+  position: relative;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Idle floating animation */
+.robot-wrapper.idle {
+  animation: idleFloat 3s ease-in-out infinite;
+}
+
+@keyframes idleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Robot SVG styles */
+.robot-svg { width: 180px; height: 260px; filter: drop-shadow(0 10px 30px rgba(0, 212, 255, 0.2)); }
+
+/* Eye glow pulse */
+.robot-eye {
+  animation: eyePulse 2s ease-in-out infinite;
+}
+
+@keyframes eyePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Antenna blink */
+.antenna-light {
+  animation: antennaBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes antennaBlink {
+  0%, 100% { fill: var(--accent-cyan); filter: drop-shadow(0 0 6px var(--accent-cyan)); }
+  50% { fill: var(--accent-purple); filter: drop-shadow(0 0 6px var(--accent-purple)); }
+}
+
+/* ===== Robot Animations ===== */
+.robot-wrapper.jump {
+  animation: robotJump 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes robotJump {
+  0% { transform: translateY(0) scaleY(1); }
+  15% { transform: translateY(5px) scaleY(0.9) scaleX(1.05); }
+  40% { transform: translateY(-80px) scaleY(1.1) scaleX(0.95); }
+  60% { transform: translateY(-80px) scaleY(1); }
+  80% { transform: translateY(5px) scaleY(0.92) scaleX(1.04); }
+  100% { transform: translateY(0) scaleY(1) scaleX(1); }
+}
+
+.robot-wrapper.run {
+  animation: robotRun 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes robotRun {
+  0% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(120px) rotate(5deg); }
+  40% { transform: translateX(180px) rotate(-3deg); }
+  60% { transform: translateX(80px) rotate(3deg); }
+  80% { transform: translateX(-40px) rotate(-2deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+.robot-wrapper.wave {
+  animation: robotWave 1s ease-in-out;
+}
+
+@keyframes robotWave {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(8deg); }
+  60% { transform: rotate(-6deg); }
+  80% { transform: rotate(4deg); }
+}
+
+.robot-wrapper.dance {
+  animation: robotDance 1.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes robotDance {
+  0% { transform: translateY(0) rotate(0) scale(1); }
+  10% { transform: translateY(-15px) rotate(-10deg) scale(1.05); }
+  20% { transform: translateY(0) rotate(10deg) scale(0.95); }
+  30% { transform: translateY(-20px) rotate(-5deg) scale(1.08); }
+  40% { transform: translateY(0) rotate(5deg) scale(1); }
+  50% { transform: translateY(-10px) rotate(-15deg) scale(1.1); }
+  60% { transform: translateY(0) rotate(15deg) scale(0.95); }
+  70% { transform: translateY(-15px) rotate(0deg) scale(1.05); }
+  80% { transform: translateY(0) rotate(-8deg) scale(1); }
+  90% { transform: translateY(-5px) rotate(3deg) scale(1.02); }
+  100% { transform: translateY(0) rotate(0) scale(1); }
+}
+
+/* Screen shake on jump landing */
+.shake { animation: screenShake 0.3s ease; }
+
+@keyframes screenShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+}
+
+/* ===== Command Input ===== */
+.command-area {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 450px;
+}
+
+.command-input {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.875rem 1.25rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.command-input::placeholder { color: var(--text-muted); }
+
+.command-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1), var(--glow-cyan);
+}
+
+.command-btn {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  border: none;
+  border-radius: 12px;
+  padding: 0.875rem 1.5rem;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.command-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-cyan);
+}
+
+.command-btn:active { transform: translateY(0); }
+
+.command-hints {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.hint-tag {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--accent-cyan);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.hint-tag:hover {
+  background: rgba(0, 212, 255, 0.15);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+/* ===== Footer ===== */
+footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+/* ===== Shop Section ===== */
+.shop-section {
+  padding-top: 4rem;
+}
+
+.shop-section > h2 {
+  text-align: center;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shop-section > p {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.product-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--glow-cyan);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.product-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+  color: #000;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.product-badge.paid {
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+  color: #fff;
+}
+
+.product-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(123, 97, 255, 0.1));
+  border: 1px solid rgba(0, 212, 255, 0.15);
+}
+
+.product-card h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.product-card .product-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+
+.product-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.product-price.paid-price {
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.product-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  border: none;
+  border-radius: 12px;
+  padding: 0.875rem 2rem;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+  text-decoration: none;
+  width: 100%;
+}
+
+.product-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-cyan);
+}
+
+.product-btn:active { transform: translateY(0); }
+
+.affiliate-notice {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  nav { padding: 0 1rem; }
+  section { padding: 4rem 1rem 2rem; }
+  .hero { padding-top: 7rem; }
+  .cards-grid { grid-template-columns: 1fr; }
+  .products-grid { grid-template-columns: 1fr; }
+  .robot-stage { height: 280px; }
+  .robot-svg { width: 140px; height: 200px; }
+  .command-area { flex-direction: column; }
+  .robot-status { gap: 0.75rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Animated Background Canvas -->
+<canvas id="bg-canvas" width="1193" height="554"></canvas>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-logo">🤖 TusaBots</div>
+  <ul class="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#shop">Shop</a></li>
+    <li><a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" class="try-ai-link">Try AI Now</a></li>
+  </ul>
+</nav>
+
+<!-- Hero Section with Robot -->
+<section id="home" class="hero">
+  <h1>Welcome to TusaBots</h1>
+  <p>Your friendly AI companion &amp; curated picks for learning about artificial intelligence.</p>
+
+  <div class="robot-container" data-np-autofill-form-type="other" data-np-checked="1" data-np-watching="1">
+    <!-- Status Bar -->
+    <div class="robot-status">
+      <div class="status-item">
+        <span class="status-label">Mood:</span>
+        <span class="status-value" id="mood-display">⚡ Energetic</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Energy:</span>
+        <div class="energy-bar-container">
+          <div class="energy-bar" id="energy-bar" style="width: 100%; background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));"></div>
+        </div>
+        <span class="status-value" id="energy-display">100%</span>
+      </div>
+    </div>
+
+    <!-- Speech Bubble -->
+    <div class="speech-bubble visible" id="speech-bubble">
+      <span id="speech-text">Welcome to the shop! Check out the AI ebooks below!</span>
+    </div>
+
+    <!-- Robot Stage -->
+    <div class="robot-stage" id="robot-stage">
+      <div class="robot-wrapper idle" id="robot">
+        <svg class="robot-svg" viewBox="0 0 180 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Antenna -->
+          <line x1="90" y1="30" x2="90" y2="8" stroke="var(--accent-cyan)" stroke-width="3" stroke-linecap="round"></line>
+          <circle class="antenna-light" cx="90" cy="6" r="5" fill="var(--accent-cyan)"></circle>
+          <!-- Head -->
+          <rect x="45" y="30" width="90" height="65" rx="18" fill="url(#headGrad)" stroke="var(--accent-cyan)" stroke-width="1.5" stroke-opacity="0.4"></rect>
+          <!-- Eyes -->
+          <circle class="robot-eye" cx="70" cy="58" r="9" fill="var(--accent-cyan)">
+            <animate attributeName="r" values="9;8;9" dur="3s" repeatCount="indefinite"></animate>
+          </circle>
+          <circle class="robot-eye" cx="110" cy="58" r="9" fill="var(--accent-cyan)">
+            <animate attributeName="r" values="9;8;9" dur="3s" repeatCount="indefinite"></animate>
+          </circle>
+          <!-- Eye inner glow -->
+          <circle cx="70" cy="58" r="4" fill="#fff" opacity="0.8"></circle>
+          <circle cx="110" cy="58" r="4" fill="#fff" opacity="0.8"></circle>
+          <!-- Mouth -->
+          <rect x="72" y="75" width="36" height="5" rx="2.5" fill="var(--accent-cyan)" opacity="0.6"></rect>
+          <!-- Neck -->
+          <rect x="82" y="95" width="16" height="12" rx="3" fill="url(#bodyGrad)"></rect>
+          <!-- Body -->
+          <rect x="35" y="107" width="110" height="80" rx="16" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1.5" stroke-opacity="0.3"></rect>
+          <!-- Chest light -->
+          <circle cx="90" cy="140" r="12" fill="none" stroke="var(--accent-cyan)" stroke-width="1.5" opacity="0.5">
+            <animate attributeName="r" values="12;14;12" dur="2s" repeatCount="indefinite"></animate>
+            <animate attributeName="opacity" values="0.5;0.8;0.5" dur="2s" repeatCount="indefinite"></animate>
+          </circle>
+          <circle cx="90" cy="140" r="6" fill="var(--accent-cyan)" opacity="0.7">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"></animate>
+          </circle>
+          <!-- Arms -->
+          <rect id="left-arm" x="10" y="112" width="22" height="55" rx="11" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></rect>
+          <rect id="right-arm" x="148" y="112" width="22" height="55" rx="11" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></rect>
+          <!-- Legs -->
+          <rect x="52" y="187" width="24" height="50" rx="10" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></rect>
+          <rect x="104" y="187" width="24" height="50" rx="10" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></rect>
+          <!-- Feet -->
+          <ellipse cx="64" cy="240" rx="18" ry="8" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></ellipse>
+          <ellipse cx="116" cy="240" rx="18" ry="8" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></ellipse>
+          <!-- Gradients -->
+          <defs>
+            <linearGradient id="headGrad" x1="45" y1="30" x2="135" y2="95">
+              <stop offset="0%" stop-color="#1a2235"></stop>
+              <stop offset="100%" stop-color="#0f1923"></stop>
+            </linearGradient>
+            <linearGradient id="bodyGrad" x1="35" y1="107" x2="145" y2="187">
+              <stop offset="0%" stop-color="#162033"></stop>
+              <stop offset="100%" stop-color="#0c1520"></stop>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Command Input -->
+    <div class="command-area">
+      <input type="text" class="command-input" id="command-input" placeholder="Type a command..." autocomplete="off" data-np-checked="1">
+      <button class="command-btn" id="command-btn" onclick="executeCommand()" data-np-autofill-submit="">Send</button>
+    </div>
+    <div class="command-hints">
+      <span class="hint-tag" onclick="quickCommand('jump')">jump</span>
+      <span class="hint-tag" onclick="quickCommand('run')">run</span>
+      <span class="hint-tag" onclick="quickCommand('wave')">wave</span>
+      <span class="hint-tag" onclick="quickCommand('dance')">dance</span>
+    </div>
+  </div>
+</section>
+
+<!-- Shop Section -->
+<section id="shop" class="shop-section">
+  <h2>How to Get Started with AI</h2>
+  <p>Hand-picked reads and tools to help you understand and harness the power of artificial intelligence. Start learning today!</p>
+
+  <div class="products-grid">
+    <!-- Ebook 1 - Free -->
+    <div class="product-card">
+      <span class="product-badge">Free</span>
+      <div class="product-icon">📘</div>
+      <h3>AI for Beginners</h3>
+      <p class="product-desc">A beginner-friendly guide to understanding artificial intelligence, machine learning basics, and how AI is changing everyday life.</p>
+      <div class="product-price">Free</div>
+      <a href="https://amzn.to/3OuTF1T" target="_blank" rel="noopener noreferrer" class="product-btn">Get it on Amazon</a>
+    </div>
+
+    <!-- Ebook 2 - Free -->
+    <div class="product-card">
+      <span class="product-badge">Free</span>
+      <div class="product-icon">📗</div>
+      <h3>Practical AI Tools</h3>
+      <p class="product-desc">Discover the best AI tools available today and learn how to use them for productivity, creativity, and problem-solving.</p>
+      <div class="product-price">Free</div>
+      <a href="https://amzn.to/3OuTF1T" target="_blank" rel="noopener noreferrer" class="product-btn">Get it on Amazon</a>
+    </div>
+
+    <!-- Ebook 3 - Paid -->
+    <div class="product-card">
+      <span class="product-badge paid">Premium</span>
+      <div class="product-icon">📕</div>
+      <h3>Mastering AI</h3>
+      <p class="product-desc">A comprehensive deep-dive into advanced AI concepts, prompt engineering, and building your own AI-powered workflows.</p>
+      <div class="product-price paid-price">Paid</div>
+      <a href="https://amzn.to/3OuTF1T" target="_blank" rel="noopener noreferrer" class="product-btn">Buy on Amazon</a>
+    </div>
+  </div>
+
+  <div class="try-ai-cta">
+    <h3>🚀 Ready to Try AI Yourself?</h3>
+    <p>Jump straight into ChatGPT and start exploring what AI can do for you — no setup required.</p>
+    <a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" class="try-ai-btn">Try AI Now →</a>
+  </div>
+
+  <p class="affiliate-notice">As an Amazon Associate, we may earn from qualifying purchases. This helps support the site at no extra cost to you.</p>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>TusaBots — How to Get Started with AI © 2026</p>
+</footer>
+
+<script>
+/* ===== Background Particle System ===== */
+(function initBackground() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  const PARTICLE_COUNT = 60;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 2 + 0.5;
+      this.speedX = (Math.random() - 0.5) * 0.3;
+      this.speedY = (Math.random() - 0.5) * 0.3;
+      this.opacity = Math.random() * 0.5 + 0.1;
+      this.pulse = Math.random() * Math.PI * 2;
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.pulse += 0.02;
+      if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+    }
+    draw() {
+      const o = this.opacity + Math.sin(this.pulse) * 0.15;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0, 212, 255, ${Math.max(0, o)})`;
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+
+    // Draw faint connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(0, 212, 255, ${0.06 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+/* ===== Robot Controller ===== */
+const Robot = {
+  el: document.getElementById('robot'),
+  stage: document.getElementById('robot-stage'),
+  speechBubble: document.getElementById('speech-bubble'),
+  speechText: document.getElementById('speech-text'),
+  moodDisplay: document.getElementById('mood-display'),
+  energyBar: document.getElementById('energy-bar'),
+  energyDisplay: document.getElementById('energy-display'),
+  input: document.getElementById('command-input'),
+
+  energy: 100,
+  mood: 'happy',
+  isAnimating: false,
+  regenInterval: null,
+
+  // Personality responses
+  responses: {
+    jump: [
+      "Whee! That was fun! 🚀",
+      "I can touch the sky! ✨",
+      "Boing! Higher next time? 🌟",
+      "Gravity is just a suggestion! 😄"
+    ],
+    run: [
+      "Zoom zoom! Can't catch me! 💨",
+      "I'm speed! Well... sort of. 🏃",
+      "Running circuits... literally! ⚡",
+      "Vroom! Was that fast enough? 🏎️"
+    ],
+    wave: [
+      "Hey there, friend! 👋",
+      "Hello, hello! Nice to see you! 😊",
+      "*waves enthusiastically* Hi! 🤗",
+      "Greetings, human! 🖖"
+    ],
+    dance: [
+      "Look at my moves! 💃🕺",
+      "Is this what the kids call 'vibing'? 🎵",
+      "Dancing like nobody's watching! 🌟",
+      "I was BUILT for this! 🎶"
+    ],
+    tired: [
+      "I'm... running low... need rest... 😴",
+      "So... tired... maybe later? 🔋",
+      "Energy levels critical... zzz... 💤"
+    ],
+    unknown: [
+      "Hmm, I don't know that one! Try: jump, run, wave, or dance 🤔",
+      "Error 404: command not found in my dance repertoire 😅",
+      "Is that a new move? I only know jump, run, wave, and dance! 🤷",
+      "Beep boop... does not compute! Try jump, run, wave, or dance 🤖"
+    ]
+  },
+
+  moods: {
+    happy: '😊 Happy',
+    excited: '🤩 Excited',
+    tired: '😴 Tired',
+    energetic: '⚡ Energetic',
+    playful: '🎉 Playful'
+  },
+
+  init() {
+    // Show initial speech bubble after a moment
+    setTimeout(() => {
+      this.say("Hi there! Welcome to the shop! Check out our AI ebooks below ✨");
+    }, 800);
+
+    // Energy regeneration
+    this.regenInterval = setInterval(() => {
+      if (this.energy < 100 && !this.isAnimating) {
+        this.energy = Math.min(100, this.energy + 2);
+        this.updateEnergy();
+        if (this.energy > 60 && this.mood === 'tired') {
+          this.setMood('happy');
+        }
+      }
+    }, 1000);
+
+    // Enter key listener
+    this.input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') executeCommand();
+    });
+  },
+
+  say(text) {
+    this.speechBubble.classList.remove('visible');
+    setTimeout(() => {
+      this.speechText.textContent = text;
+      this.speechBubble.classList.add('visible');
+    }, 100);
+  },
+
+  getResponse(type) {
+    const pool = this.responses[type] || this.responses.unknown;
+    return pool[Math.floor(Math.random() * pool.length)];
+  },
+
+  setMood(mood) {
+    this.mood = mood;
+    this.moodDisplay.textContent = this.moods[mood] || this.moods.happy;
+  },
+
+  updateEnergy() {
+    this.energyBar.style.width = this.energy + '%';
+    this.energyDisplay.textContent = Math.round(this.energy) + '%';
+
+    // Color changes based on energy
+    if (this.energy > 60) {
+      this.energyBar.style.background = 'linear-gradient(90deg, var(--accent-green), var(--accent-cyan))';
+    } else if (this.energy > 30) {
+      this.energyBar.style.background = 'linear-gradient(90deg, #ffaa00, #ff6600)';
+    } else {
+      this.energyBar.style.background = 'linear-gradient(90deg, #ff4444, #ff0000)';
+    }
+  },
+
+  drainEnergy(amount) {
+    this.energy = Math.max(0, this.energy - amount);
+    this.updateEnergy();
+
+    if (this.energy <= 15) {
+      this.setMood('tired');
+    } else if (this.energy > 80) {
+      this.setMood('energetic');
+    }
+  },
+
+  animate(type) {
+    if (this.isAnimating) return false;
+
+    // Check energy
+    if (this.energy < 10) {
+      this.say(this.getResponse('tired'));
+      this.setMood('tired');
+      return false;
+    }
+
+    this.isAnimating = true;
+    this.el.classList.remove('idle');
+    this.el.classList.add(type);
+
+    // Drain energy based on action
+    const costs = { jump: 12, run: 18, wave: 8, dance: 25 };
+    this.drainEnergy(costs[type] || 10);
+
+    // Set mood based on action
+    if (type === 'dance') this.setMood('playful');
+    else if (type === 'run') this.setMood('energetic');
+    else if (type === 'jump') this.setMood('excited');
+    else this.setMood('happy');
+
+    // Say something fun
+    this.say(this.getResponse(type));
+
+    // Screen shake on jump
+    if (type === 'jump') {
+      setTimeout(() => {
+        this.stage.classList.add('shake');
+        setTimeout(() => this.stage.classList.remove('shake'), 300);
+      }, 500);
+    }
+
+    // Get animation duration
+    const durations = { jump: 800, run: 1400, wave: 1000, dance: 1600 };
+    const dur = durations[type] || 1000;
+
+    setTimeout(() => {
+      this.el.classList.remove(type);
+      this.el.classList.add('idle');
+      this.isAnimating = false;
+    }, dur);
+
+    return true;
+  }
+};
+
+/* ===== Command Execution ===== */
+function executeCommand() {
+  const input = document.getElementById('command-input');
+  const cmd = input.value.trim().toLowerCase();
+  input.value = '';
+
+  if (!cmd) return;
+
+  const validCommands = ['jump', 'run', 'wave', 'dance'];
+
+  if (validCommands.includes(cmd)) {
+    Robot.animate(cmd);
+  } else {
+    Robot.say(Robot.getResponse('unknown'));
+  }
+}
+
+function quickCommand(cmd) {
+  document.getElementById('command-input').value = cmd;
+  executeCommand();
+}
+
+/* ===== Initialize ===== */
+Robot.init();
+</script>
+
+
+</body></html>
