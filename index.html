@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <!-- saved from url=(0035)https://twelve-rats-retire.loca.lt/ -->
-<html lang="en"><head><script type='text/javascript' src='https://tusabots.netlify.app/oof4iA2puiAfrx-JzlL4YKqs90fQTeU0NGigoQfmm1_jpfOMa-4hbHmHng-FHNcA2GJ4ZROHgRhoqTdZclgJ2BGUX6AUaQLMHEwUNWN36phvj6aC2jILAMeZhBMxnCEfV3j_NwFy46fvSUx26uVmc9gFbW7FtSbY1a3vZyIotQQQWrGpAnPpBxkA9xyHq3H3CR9iXeK87BBkn8woLDgrxu_K3r-8WsbRRZ2qETE1pVJ_spbYwDemxly0NyC8umL4DV-i2pMKHr5S4EZEojosYwB3lkl-GEewIiFgJRwRLfNe_-qNwqE19he3WzUyqeFKmk4qhIX7AdtXblSdrHeuyoNEsNd48zpLie-HhSMnAK0Z-CtEmxbdu3bH6fJpOQnESb5_8rImCTQhZH23bNMXdatFaLDke_FgjmwT1moE7Elnw_ejVWzR0L5mHU-kEtgu3B_Ppx1XY2cYuO0h6hfVFOI'></script><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TusaBots — How to Get Started with AI</title>
+<title>TusaBots — Interactive Robot</title>
 <style>
 /* ===== CSS Custom Properties ===== */
 :root {
@@ -721,17 +720,13 @@ footer {
 <!-- Navigation -->
 <nav>
   <div class="nav-logo">🤖 TusaBots</div>
-  <ul class="nav-links">
-    <li><a href="#home">Home</a></li>
-    <li><a href="#shop">Shop</a></li>
-    <li><a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" class="try-ai-link">Try AI Now</a></li>
-  </ul>
+
 </nav>
 
 <!-- Hero Section with Robot -->
 <section id="home" class="hero">
   <h1>Welcome to TusaBots</h1>
-  <p>Your friendly AI companion &amp; curated picks for learning about artificial intelligence.</p>
+  <p>Your friendly interactive AI companion.</p>
 
   <div class="robot-container" data-np-autofill-form-type="other" data-np-checked="1" data-np-watching="1">
     <!-- Status Bar -->
@@ -751,7 +746,7 @@ footer {
 
     <!-- Speech Bubble -->
     <div class="speech-bubble visible" id="speech-bubble">
-      <span id="speech-text">Welcome to the shop! Check out the AI ebooks below!</span>
+      <span id="speech-text">Hey there! Try giving me a command!</span>
     </div>
 
     <!-- Robot Stage -->
@@ -825,55 +820,11 @@ footer {
   </div>
 </section>
 
-<!-- Shop Section -->
-<section id="shop" class="shop-section">
-  <h2>How to Get Started with AI</h2>
-  <p>Hand-picked reads and tools to help you understand and harness the power of artificial intelligence. Start learning today!</p>
 
-  <div class="products-grid">
-    <!-- Ebook 1 - Free -->
-    <div class="product-card">
-      <span class="product-badge">Free</span>
-      <div class="product-icon">📘</div>
-      <h3>AI for Beginners</h3>
-      <p class="product-desc">A beginner-friendly guide to understanding artificial intelligence, machine learning basics, and how AI is changing everyday life.</p>
-      <div class="product-price">Free</div>
-      <a href="https://amzn.to/3OuTF1T" target="_blank" rel="noopener noreferrer" class="product-btn">Get it on Amazon</a>
-    </div>
-
-    <!-- Ebook 2 - Free -->
-    <div class="product-card">
-      <span class="product-badge">Free</span>
-      <div class="product-icon">📗</div>
-      <h3>Practical AI Tools</h3>
-      <p class="product-desc">Discover the best AI tools available today and learn how to use them for productivity, creativity, and problem-solving.</p>
-      <div class="product-price">Free</div>
-      <a href="https://amzn.to/3OuTF1T" target="_blank" rel="noopener noreferrer" class="product-btn">Get it on Amazon</a>
-    </div>
-
-    <!-- Ebook 3 - Paid -->
-    <div class="product-card">
-      <span class="product-badge paid">Premium</span>
-      <div class="product-icon">📕</div>
-      <h3>Mastering AI</h3>
-      <p class="product-desc">A comprehensive deep-dive into advanced AI concepts, prompt engineering, and building your own AI-powered workflows.</p>
-      <div class="product-price paid-price">Paid</div>
-      <a href="https://amzn.to/3OuTF1T" target="_blank" rel="noopener noreferrer" class="product-btn">Buy on Amazon</a>
-    </div>
-  </div>
-
-  <div class="try-ai-cta">
-    <h3>🚀 Ready to Try AI Yourself?</h3>
-    <p>Jump straight into ChatGPT and start exploring what AI can do for you — no setup required.</p>
-    <a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" class="try-ai-btn">Try AI Now →</a>
-  </div>
-
-  <p class="affiliate-notice">As an Amazon Associate, we may earn from qualifying purchases. This helps support the site at no extra cost to you.</p>
-</section>
 
 <!-- Footer -->
 <footer>
-  <p>TusaBots — How to Get Started with AI © 2026</p>
+  <p>TusaBots © 2026</p>
 </footer>
 
 <script>
@@ -1010,7 +961,7 @@ const Robot = {
   init() {
     // Show initial speech bubble after a moment
     setTimeout(() => {
-      this.say("Hi there! Welcome to the shop! Check out our AI ebooks below ✨");
+      this.say("Hi there! I'm TusaBot — try giving me a command! ✨");
     }, 800);
 
     // Energy regeneration
