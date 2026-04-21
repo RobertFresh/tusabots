@@ -298,21 +298,7 @@ section {
 
 .status-value { color: var(--accent-cyan); font-weight: 600; }
 
-.energy-bar-container {
-  width: 100px;
-  height: 8px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 4px;
-  overflow: hidden;
-}
 
-.energy-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));
-  border-radius: 4px;
-  transition: width 0.5s ease;
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
-}
 
 /* ===== Speech Bubble ===== */
 .speech-bubble {
@@ -350,11 +336,73 @@ section {
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
+/* ===== Power Bar (Vertical Battery) ===== */
+.power-bar-wrapper {
+  position: fixed;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.power-bar-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+}
+
+.power-bar-outer {
+  width: 36px;
+  height: 160px;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(0, 212, 255, 0.25);
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.4);
+}
+
+.power-bar-outer::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 8px;
+  background: rgba(0, 212, 255, 0.3);
+  border-radius: 4px 4px 0 0;
+}
+
+.power-bar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top, var(--accent-green), var(--accent-cyan));
+  border-radius: 0 0 16px 16px;
+  transition: height 0.5s ease, box-shadow 0.5s ease, background 0.5s ease;
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.3), inset 0 0 8px rgba(0, 255, 136, 0.15);
+}
+
+.power-bar-pct {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
 /* ===== Robot SVG ===== */
 .robot-stage {
   width: 100%;
   max-width: 500px;
-  height: 340px;
+  height: 420px;
   position: relative;
   display: flex;
   align-items: center;
@@ -377,7 +425,7 @@ section {
 }
 
 /* Robot SVG styles */
-.robot-svg { width: 180px; height: 260px; filter: drop-shadow(0 10px 30px rgba(0, 212, 255, 0.2)); }
+.robot-svg { width: 260px; height: 374px; filter: drop-shadow(0 10px 30px rgba(0, 212, 255, 0.2)); }
 
 /* Eye glow pulse */
 .robot-eye {
@@ -698,6 +746,25 @@ footer {
   border-top: 1px solid var(--glass-border);
 }
 
+/* ===== Login Button ===== */
+.nav-login-btn {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  color: #fff;
+  border: none;
+  padding: 0.45rem 1.2rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition);
+}
+
+.nav-login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-cyan);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   nav { padding: 0 1rem; }
@@ -705,10 +772,12 @@ footer {
   .hero { padding-top: 7rem; }
   .cards-grid { grid-template-columns: 1fr; }
   .products-grid { grid-template-columns: 1fr; }
-  .robot-stage { height: 280px; }
-  .robot-svg { width: 140px; height: 200px; }
+  .robot-stage { height: 360px; }
+  .robot-svg { width: 200px; height: 288px; }
   .command-area { flex-direction: column; }
   .robot-status { gap: 0.75rem; }
+  .power-bar-wrapper { right: 0.75rem; }
+  .power-bar-outer { width: 28px; height: 120px; }
 }
 </style>
 </head>
@@ -720,8 +789,17 @@ footer {
 <!-- Navigation -->
 <nav>
   <div class="nav-logo">🤖 TusaBots</div>
-
+  <a href="dashboard.html" class="nav-login-btn">Login</a>
 </nav>
+
+<!-- Power Bar (Vertical Battery) -->
+<div class="power-bar-wrapper">
+  <span class="power-bar-label">Power</span>
+  <div class="power-bar-outer">
+    <div class="power-bar-fill" id="power-bar-fill" style="height: 100%;"></div>
+  </div>
+  <span class="power-bar-pct" id="power-bar-pct">100%</span>
+</div>
 
 <!-- Hero Section with Robot -->
 <section id="home" class="hero">
@@ -729,20 +807,7 @@ footer {
   <p>Your friendly interactive AI companion.</p>
 
   <div class="robot-container" data-np-autofill-form-type="other" data-np-checked="1" data-np-watching="1">
-    <!-- Status Bar -->
-    <div class="robot-status">
-      <div class="status-item">
-        <span class="status-label">Mood:</span>
-        <span class="status-value" id="mood-display">⚡ Energetic</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Energy:</span>
-        <div class="energy-bar-container">
-          <div class="energy-bar" id="energy-bar" style="width: 100%; background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));"></div>
-        </div>
-        <span class="status-value" id="energy-display">100%</span>
-      </div>
-    </div>
+
 
     <!-- Speech Bubble -->
     <div class="speech-bubble visible" id="speech-bubble">
@@ -901,9 +966,8 @@ const Robot = {
   stage: document.getElementById('robot-stage'),
   speechBubble: document.getElementById('speech-bubble'),
   speechText: document.getElementById('speech-text'),
-  moodDisplay: document.getElementById('mood-display'),
-  energyBar: document.getElementById('energy-bar'),
-  energyDisplay: document.getElementById('energy-display'),
+  powerBarFill: document.getElementById('power-bar-fill'),
+  powerBarPct: document.getElementById('power-bar-pct'),
   input: document.getElementById('command-input'),
 
   energy: 100,
@@ -996,20 +1060,23 @@ const Robot = {
 
   setMood(mood) {
     this.mood = mood;
-    this.moodDisplay.textContent = this.moods[mood] || this.moods.happy;
   },
 
   updateEnergy() {
-    this.energyBar.style.width = this.energy + '%';
-    this.energyDisplay.textContent = Math.round(this.energy) + '%';
+    // Update vertical power bar
+    this.powerBarFill.style.height = this.energy + '%';
+    this.powerBarPct.textContent = Math.round(this.energy) + '%';
 
-    // Color changes based on energy
+    // Color + glow changes based on energy
     if (this.energy > 60) {
-      this.energyBar.style.background = 'linear-gradient(90deg, var(--accent-green), var(--accent-cyan))';
+      this.powerBarFill.style.background = 'linear-gradient(to top, var(--accent-green), var(--accent-cyan))';
+      this.powerBarFill.style.boxShadow = '0 0 12px rgba(0, 255, 136, 0.3), inset 0 0 8px rgba(0, 255, 136, 0.15)';
     } else if (this.energy > 30) {
-      this.energyBar.style.background = 'linear-gradient(90deg, #ffaa00, #ff6600)';
+      this.powerBarFill.style.background = 'linear-gradient(to top, #ff6600, #ffaa00)';
+      this.powerBarFill.style.boxShadow = '0 0 12px rgba(255, 170, 0, 0.4), inset 0 0 8px rgba(255, 170, 0, 0.2)';
     } else {
-      this.energyBar.style.background = 'linear-gradient(90deg, #ff4444, #ff0000)';
+      this.powerBarFill.style.background = 'linear-gradient(to top, #ff0000, #ff4444)';
+      this.powerBarFill.style.boxShadow = '0 0 16px rgba(255, 0, 0, 0.5), inset 0 0 8px rgba(255, 0, 0, 0.25)';
     }
   },
 
