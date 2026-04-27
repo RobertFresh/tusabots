@@ -765,6 +765,153 @@ footer {
   box-shadow: var(--glow-cyan);
 }
 
+/* ===== Auth Modal ===== */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 15, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.auth-overlay.open { display: flex; }
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2rem 1.75rem;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), var(--glow-cyan);
+  position: relative;
+}
+.auth-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.9rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.auth-close:hover { color: var(--accent-cyan); }
+.auth-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  background: linear-gradient(135deg, #fff, var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.auth-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+.auth-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  background: rgba(255,255,255,0.03);
+  padding: 0.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+}
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.auth-tab.active {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  color: #fff;
+}
+.auth-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.auth-form label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: -0.4rem;
+}
+.auth-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.auth-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+.auth-submit {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.4rem;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.auth-submit:hover { transform: translateY(-2px); box-shadow: var(--glow-cyan); }
+.auth-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.auth-link {
+  background: none;
+  border: none;
+  color: var(--accent-cyan);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+}
+.auth-link:hover { text-decoration: underline; }
+.auth-message {
+  font-size: 0.85rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  display: none;
+}
+.auth-message.show { display: block; }
+.auth-message.error {
+  background: rgba(255, 80, 80, 0.1);
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  color: #ff8a8a;
+}
+.auth-message.success {
+  background: rgba(0, 255, 136, 0.08);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  color: var(--accent-green);
+}
+.auth-foot {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   nav { padding: 0 1rem; }
@@ -789,8 +936,71 @@ footer {
 <!-- Navigation -->
 <nav>
   <div class="nav-logo">🤖 TusaBots</div>
-  <a href="dashboard.html" class="nav-login-btn">Login</a>
+  <button type="button" class="nav-login-btn" id="open-auth-btn">Login</button>
 </nav>
+
+<!-- Auth Modal -->
+<div class="auth-overlay" id="auth-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+  <div class="auth-card">
+    <button type="button" class="auth-close" id="auth-close" aria-label="Close">×</button>
+    <h2 class="auth-title" id="auth-title">Welcome</h2>
+    <p class="auth-subtitle" id="auth-subtitle">Sign in to chat with your TusaBot.</p>
+
+    <div class="auth-tabs" id="auth-tabs">
+      <button type="button" class="auth-tab active" data-tab="login">Login</button>
+      <button type="button" class="auth-tab" data-tab="signup">Sign up</button>
+    </div>
+
+    <div class="auth-message" id="auth-message"></div>
+
+    <!-- Login -->
+    <form class="auth-form" id="form-login">
+      <label for="login-email">Email</label>
+      <input class="auth-input" id="login-email" type="email" required autocomplete="email">
+      <label for="login-password">Password</label>
+      <input class="auth-input" id="login-password" type="password" required autocomplete="current-password">
+      <button class="auth-submit" type="submit">Log in</button>
+      <div class="auth-foot">
+        <button type="button" class="auth-link" id="forgot-link">Forgot password?</button>
+      </div>
+    </form>
+
+    <!-- Signup -->
+    <form class="auth-form" id="form-signup" style="display:none">
+      <label for="signup-name">Name</label>
+      <input class="auth-input" id="signup-name" type="text" autocomplete="name">
+      <label for="signup-email">Email</label>
+      <input class="auth-input" id="signup-email" type="email" required autocomplete="email">
+      <label for="signup-password">Password</label>
+      <input class="auth-input" id="signup-password" type="password" required minlength="8" autocomplete="new-password">
+      <button class="auth-submit" type="submit">Create account</button>
+    </form>
+
+    <!-- Forgot Password -->
+    <form class="auth-form" id="form-forgot" style="display:none">
+      <label for="forgot-email">Email</label>
+      <input class="auth-input" id="forgot-email" type="email" required autocomplete="email">
+      <button class="auth-submit" type="submit">Send reset link</button>
+      <div class="auth-foot">
+        <button type="button" class="auth-link" data-go="login">← Back to login</button>
+      </div>
+    </form>
+
+    <!-- Accept Invite -->
+    <form class="auth-form" id="form-invite" style="display:none">
+      <label for="invite-password">Set a password</label>
+      <input class="auth-input" id="invite-password" type="password" required minlength="8" autocomplete="new-password">
+      <button class="auth-submit" type="submit">Accept invite</button>
+    </form>
+
+    <!-- Reset Password (after recovery callback) -->
+    <form class="auth-form" id="form-reset" style="display:none">
+      <label for="reset-password">New password</label>
+      <input class="auth-input" id="reset-password" type="password" required minlength="8" autocomplete="new-password">
+      <button class="auth-submit" type="submit">Update password</button>
+    </form>
+  </div>
+</div>
 
 <!-- Power Bar (Vertical Battery) -->
 <div class="power-bar-wrapper">
@@ -1218,6 +1428,210 @@ function quickCommand(cmd) {
 
 /* ===== Initialize ===== */
 Robot.init();
+</script>
+
+<script type="module">
+import {
+  login,
+  signup,
+  acceptInvite,
+  requestPasswordRecovery,
+  updateUser,
+  handleAuthCallback,
+  getUser,
+  AuthError,
+  MissingIdentityError,
+} from 'https://esm.sh/@netlify/identity@1?bundle';
+
+const overlay = document.getElementById('auth-overlay');
+const openBtn = document.getElementById('open-auth-btn');
+const closeBtn = document.getElementById('auth-close');
+const tabs = document.querySelectorAll('#auth-tabs .auth-tab');
+const messageEl = document.getElementById('auth-message');
+const titleEl = document.getElementById('auth-title');
+const subtitleEl = document.getElementById('auth-subtitle');
+const tabsEl = document.getElementById('auth-tabs');
+
+const forms = {
+  login: document.getElementById('form-login'),
+  signup: document.getElementById('form-signup'),
+  forgot: document.getElementById('form-forgot'),
+  invite: document.getElementById('form-invite'),
+  reset:  document.getElementById('form-reset'),
+};
+
+let inviteToken = null;
+
+function showMessage(text, kind) {
+  messageEl.textContent = text;
+  messageEl.className = 'auth-message show ' + kind;
+}
+function clearMessage() {
+  messageEl.textContent = '';
+  messageEl.className = 'auth-message';
+}
+function showForm(name) {
+  for (const key of Object.keys(forms)) {
+    forms[key].style.display = key === name ? 'flex' : 'none';
+  }
+  tabs.forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+}
+function setMode(mode) {
+  clearMessage();
+  if (mode === 'invite') {
+    titleEl.textContent = 'Accept your invite';
+    subtitleEl.textContent = 'Choose a password to finish setting up your account.';
+    tabsEl.style.display = 'none';
+    showForm('invite');
+  } else if (mode === 'reset') {
+    titleEl.textContent = 'Set a new password';
+    subtitleEl.textContent = 'Enter a new password for your account.';
+    tabsEl.style.display = 'none';
+    showForm('reset');
+  } else if (mode === 'forgot') {
+    titleEl.textContent = 'Reset password';
+    subtitleEl.textContent = 'We will email you a link to reset your password.';
+    tabsEl.style.display = 'none';
+    showForm('forgot');
+  } else {
+    titleEl.textContent = 'Welcome';
+    subtitleEl.textContent = 'Sign in to chat with your TusaBot.';
+    tabsEl.style.display = 'flex';
+    showForm(mode);
+  }
+}
+function openModal(mode = 'login') {
+  setMode(mode);
+  overlay.classList.add('open');
+}
+function closeModal() {
+  overlay.classList.remove('open');
+}
+
+openBtn.addEventListener('click', () => openModal('login'));
+closeBtn.addEventListener('click', closeModal);
+overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
+
+tabs.forEach((tab) => tab.addEventListener('click', () => setMode(tab.dataset.tab)));
+document.getElementById('forgot-link').addEventListener('click', () => setMode('forgot'));
+document.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => setMode(el.dataset.go)));
+
+function describeError(error) {
+  if (error instanceof MissingIdentityError) {
+    return 'Identity is not enabled on this site yet. Try again after the next deploy.';
+  }
+  if (error instanceof AuthError) {
+    if (error.status === 401) return 'Invalid email or password.';
+    if (error.status === 403) return 'Sign-ups are disabled. Ask the site admin for an invite.';
+    if (error.status === 422) return 'Please double-check your email and password.';
+    return error.message || 'Something went wrong. Please try again.';
+  }
+  return 'Something went wrong. Please try again.';
+}
+
+forms.login.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMessage();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  try {
+    await login(email, password);
+    window.location.href = 'dashboard.html';
+  } catch (err) {
+    showMessage(describeError(err), 'error');
+  }
+});
+
+forms.signup.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMessage();
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  try {
+    const user = await signup(email, password, name ? { full_name: name } : undefined);
+    if (user.emailVerified) {
+      window.location.href = 'dashboard.html';
+    } else {
+      showMessage('Account created. Check your email to confirm your account.', 'success');
+    }
+  } catch (err) {
+    showMessage(describeError(err), 'error');
+  }
+});
+
+forms.forgot.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMessage();
+  const email = document.getElementById('forgot-email').value.trim();
+  try {
+    await requestPasswordRecovery(email);
+    showMessage('If that email is registered, a reset link is on the way.', 'success');
+  } catch (err) {
+    showMessage(describeError(err), 'error');
+  }
+});
+
+forms.invite.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMessage();
+  const password = document.getElementById('invite-password').value;
+  if (!inviteToken) {
+    showMessage('Invite token missing. Please reopen the link from your invite email.', 'error');
+    return;
+  }
+  try {
+    await acceptInvite(inviteToken, password);
+    window.location.href = 'dashboard.html';
+  } catch (err) {
+    showMessage(describeError(err), 'error');
+  }
+});
+
+forms.reset.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMessage();
+  const password = document.getElementById('reset-password').value;
+  try {
+    await updateUser({ password });
+    window.location.href = 'dashboard.html';
+  } catch (err) {
+    showMessage(describeError(err), 'error');
+  }
+});
+
+// Process invite/recovery/confirmation callbacks from the URL hash on load
+(async () => {
+  try {
+    const result = await handleAuthCallback();
+    if (!result) {
+      // Not a callback - if already logged in, jump straight to the dashboard when Login is clicked
+      const existing = await getUser();
+      if (existing) {
+        openBtn.textContent = 'Open dashboard';
+        openBtn.addEventListener('click', (e) => {
+          e.stopImmediatePropagation();
+          window.location.href = 'dashboard.html';
+        }, { capture: true });
+      }
+      return;
+    }
+    if (result.type === 'invite') {
+      inviteToken = result.token;
+      openModal('invite');
+    } else if (result.type === 'recovery') {
+      openModal('reset');
+    } else if (result.type === 'confirmation') {
+      window.location.href = 'dashboard.html';
+    } else if (result.type === 'oauth' || result.type === 'email_change') {
+      window.location.href = 'dashboard.html';
+    }
+  } catch (err) {
+    openModal('login');
+    showMessage(describeError(err), 'error');
+  }
+})();
 </script>
 
 

@@ -68,6 +68,22 @@ nav {
 
 .nav-back:hover { color: var(--accent-cyan); }
 
+.nav-actions { display: flex; align-items: center; gap: 1rem; }
+.nav-user { color: var(--text-secondary); font-size: 0.85rem; }
+.nav-logout {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 0.4rem 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+.nav-logout:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+
 /* Dashboard Content */
 .dashboard {
   flex: 1;
@@ -219,7 +235,10 @@ footer {
 
 <nav>
   <a href="index.html" class="nav-logo">🤖 TusaBots</a>
-  <a href="index.html" class="nav-back">← Back to Home</a>
+  <div class="nav-actions">
+    <span class="nav-user" id="nav-user"></span>
+    <button type="button" class="nav-logout" id="nav-logout">Log out</button>
+  </div>
 </nav>
 
 <main class="dashboard">
@@ -279,6 +298,25 @@ function sendMessage() {
 
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendMessage();
+});
+</script>
+
+<script type="module">
+import { getUser, logout } from 'https://esm.sh/@netlify/identity@1?bundle';
+
+(async () => {
+  const user = await getUser();
+  if (!user) {
+    window.location.replace('index.html');
+    return;
+  }
+  const label = document.getElementById('nav-user');
+  if (label) label.textContent = user.name || user.email || '';
+})();
+
+document.getElementById('nav-logout').addEventListener('click', async () => {
+  try { await logout(); } catch {}
+  window.location.replace('index.html');
 });
 </script>
 
