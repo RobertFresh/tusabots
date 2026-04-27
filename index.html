@@ -236,11 +236,216 @@ footer {
   cursor: pointer;
   text-decoration: none;
   transition: all var(--transition);
+  font-family: inherit;
 }
 
 .nav-login-btn:hover {
   transform: translateY(-2px);
   box-shadow: var(--glow-cyan);
+}
+
+.nav-login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.nav-user-email {
+  color: var(--text-primary);
+  font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-logout-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border);
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition);
+}
+
+.nav-logout-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-cyan);
+}
+
+/* ===== Auth Modal ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(5, 8, 15, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-backdrop.visible { display: flex; }
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), var(--glow-cyan);
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  transition: all var(--transition);
+}
+
+.modal-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+
+.modal h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.3rem;
+  background: linear-gradient(135deg, #fff, var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.modal-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: rgba(255,255,255,0.03);
+  padding: 0.25rem;
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+}
+
+.tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition);
+}
+
+.tab.active {
+  background: rgba(0, 212, 255, 0.12);
+  color: var(--accent-cyan);
+}
+
+.form-group { margin-bottom: 0.85rem; }
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.form-input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.form-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+.submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  color: #fff;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 0.5rem;
+  transition: all var(--transition);
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--glow-cyan);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-message {
+  margin-top: 0.85rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  display: none;
+}
+
+.form-message.error {
+  display: block;
+  background: rgba(255, 80, 80, 0.1);
+  border: 1px solid rgba(255, 80, 80, 0.25);
+  color: #ff8a8a;
+}
+
+.form-message.success {
+  display: block;
+  background: rgba(0, 255, 136, 0.08);
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  color: var(--accent-green);
 }
 
 /* ===== Responsive ===== */
@@ -261,8 +466,39 @@ footer {
 <!-- Navigation -->
 <nav>
   <div class="nav-logo">🤖 TusaBots</div>
-  <a href="dashboard.html" class="nav-login-btn">Login</a>
+  <div id="nav-auth">
+    <button class="nav-login-btn" id="open-login-btn" disabled>Login</button>
+  </div>
 </nav>
+
+<!-- Auth Modal -->
+<div class="modal-backdrop" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+  <div class="modal">
+    <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+    <h2 id="auth-title">Welcome</h2>
+    <p class="modal-subtitle" id="auth-subtitle">Log in to access your TusaBot</p>
+    <div class="tabs" role="tablist">
+      <button class="tab active" id="tab-login" role="tab" aria-selected="true">Log In</button>
+      <button class="tab" id="tab-signup" role="tab" aria-selected="false">Sign Up</button>
+    </div>
+    <form id="auth-form" autocomplete="on">
+      <div class="form-group" id="name-group" style="display: none;">
+        <label for="name">Name</label>
+        <input class="form-input" type="text" id="name" name="name" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input class="form-input" type="email" id="email" name="email" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input class="form-input" type="password" id="password" name="password" required autocomplete="current-password" minlength="6">
+      </div>
+      <button class="submit-btn" type="submit" id="submit-btn">Log In</button>
+      <div class="form-message" id="form-message"></div>
+    </form>
+  </div>
+</div>
 
 
 
@@ -438,6 +674,204 @@ footer {
       bubble.classList.add('visible');
     }, 400);
   }, 5000);
+})();
+</script>
+
+<script type="module">
+import {
+  login,
+  signup,
+  logout,
+  getUser,
+  handleAuthCallback,
+  onAuthChange,
+  AUTH_EVENTS,
+  AuthError,
+  MissingIdentityError,
+} from 'https://esm.sh/@netlify/identity@1?bundle';
+
+const navAuth = document.getElementById('nav-auth');
+const openBtn = document.getElementById('open-login-btn');
+const modal = document.getElementById('auth-modal');
+const closeBtn = document.getElementById('modal-close');
+const tabLogin = document.getElementById('tab-login');
+const tabSignup = document.getElementById('tab-signup');
+const form = document.getElementById('auth-form');
+const submitBtn = document.getElementById('submit-btn');
+const formMessage = document.getElementById('form-message');
+const nameGroup = document.getElementById('name-group');
+const nameInput = document.getElementById('name');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const authTitle = document.getElementById('auth-title');
+const authSubtitle = document.getElementById('auth-subtitle');
+
+let mode = 'login';
+
+function setMode(next) {
+  mode = next;
+  if (mode === 'login') {
+    tabLogin.classList.add('active');
+    tabLogin.setAttribute('aria-selected', 'true');
+    tabSignup.classList.remove('active');
+    tabSignup.setAttribute('aria-selected', 'false');
+    nameGroup.style.display = 'none';
+    nameInput.required = false;
+    submitBtn.textContent = 'Log In';
+    authTitle.textContent = 'Welcome back';
+    authSubtitle.textContent = 'Log in to access your TusaBot';
+    passwordInput.autocomplete = 'current-password';
+  } else {
+    tabSignup.classList.add('active');
+    tabSignup.setAttribute('aria-selected', 'true');
+    tabLogin.classList.remove('active');
+    tabLogin.setAttribute('aria-selected', 'false');
+    nameGroup.style.display = '';
+    nameInput.required = true;
+    submitBtn.textContent = 'Create account';
+    authTitle.textContent = 'Create your account';
+    authSubtitle.textContent = 'Sign up to start chatting with your TusaBot';
+    passwordInput.autocomplete = 'new-password';
+  }
+  clearMessage();
+}
+
+function showMessage(text, type) {
+  formMessage.textContent = text;
+  formMessage.className = 'form-message ' + type;
+}
+
+function clearMessage() {
+  formMessage.textContent = '';
+  formMessage.className = 'form-message';
+}
+
+function openModal() {
+  modal.classList.add('visible');
+  setTimeout(() => emailInput.focus(), 50);
+}
+
+function closeModal() {
+  modal.classList.remove('visible');
+  form.reset();
+  clearMessage();
+  setMode('login');
+}
+
+function renderLoggedIn(user) {
+  const label = user.email || 'Account';
+  navAuth.innerHTML = `
+    <div class="nav-user">
+      <span class="nav-user-email" title="${label}">${label}</span>
+      <a href="dashboard.html" class="nav-login-btn">Dashboard</a>
+      <button class="nav-logout-btn" id="logout-btn">Log out</button>
+    </div>
+  `;
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.warn('Logout error', err);
+    }
+    renderLoggedOut();
+  });
+}
+
+function renderLoggedOut() {
+  navAuth.innerHTML = `<button class="nav-login-btn" id="open-login-btn">Login</button>`;
+  document.getElementById('open-login-btn').addEventListener('click', openModal);
+}
+
+function describeError(error) {
+  if (error instanceof MissingIdentityError) {
+    return 'Identity is not enabled yet. The site owner needs to enable Identity in the Netlify dashboard.';
+  }
+  if (error instanceof AuthError) {
+    switch (error.status) {
+      case 401: return 'Invalid email or password.';
+      case 403: return 'Signups are not allowed. Ask the site owner for an invite.';
+      case 404: return 'Account not found.';
+      case 422: return 'Please check your email and password (min 6 characters).';
+      default: return error.message || 'Something went wrong. Please try again.';
+    }
+  }
+  return 'Something went wrong. Please try again.';
+}
+
+openBtn.addEventListener('click', openModal);
+closeBtn.addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modal.classList.contains('visible')) closeModal();
+});
+tabLogin.addEventListener('click', () => setMode('login'));
+tabSignup.addEventListener('click', () => setMode('signup'));
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMessage();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  if (!email || !password) return;
+
+  submitBtn.disabled = true;
+  const originalLabel = submitBtn.textContent;
+  submitBtn.textContent = mode === 'login' ? 'Logging in…' : 'Creating account…';
+
+  try {
+    if (mode === 'login') {
+      const user = await login(email, password);
+      showMessage(`Welcome back, ${user.name || user.email}!`, 'success');
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 400);
+    } else {
+      const name = nameInput.value.trim();
+      const user = await signup(email, password, name ? { full_name: name } : undefined);
+      if (user.emailVerified) {
+        showMessage('Account created. Redirecting…', 'success');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 600);
+      } else {
+        showMessage('Account created — check your email to confirm before logging in.', 'success');
+        setMode('login');
+      }
+    }
+  } catch (error) {
+    showMessage(describeError(error), 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalLabel;
+  }
+});
+
+onAuthChange((event, user) => {
+  if (event === AUTH_EVENTS.LOGIN || event === AUTH_EVENTS.USER_UPDATED) {
+    if (user) renderLoggedIn(user);
+  } else if (event === AUTH_EVENTS.LOGOUT) {
+    renderLoggedOut();
+  }
+});
+
+(async function bootstrap() {
+  try {
+    await handleAuthCallback();
+  } catch (error) {
+    console.warn('Auth callback error', error);
+  }
+  try {
+    const user = await getUser();
+    if (user) renderLoggedIn(user);
+    else renderLoggedOut();
+  } catch (error) {
+    if (error instanceof MissingIdentityError) {
+      navAuth.innerHTML = `<button class="nav-login-btn" id="open-login-btn">Login</button>`;
+      const btn = document.getElementById('open-login-btn');
+      btn.addEventListener('click', () => {
+        openModal();
+        showMessage('Identity is not enabled on this site yet. Enable it in the Netlify dashboard to log in.', 'error');
+      });
+    } else {
+      renderLoggedOut();
+    }
+  }
 })();
 </script>
 
