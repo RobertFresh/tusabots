@@ -13,6 +13,7 @@
   --accent-blue: #4a6cf7;
   --accent-purple: #7b61ff;
   --accent-green: #00ff88;
+  --accent-red: #ff5577;
   --text-primary: #e6edf3;
   --text-secondary: #8b949e;
   --text-muted: #484f58;
@@ -36,7 +37,6 @@ body {
   flex-direction: column;
 }
 
-/* Nav */
 nav {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -59,7 +59,9 @@ nav {
   text-decoration: none;
 }
 
-.nav-back {
+.nav-right { display: flex; gap: 1rem; align-items: center; }
+
+.nav-back, .nav-user-email {
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.9rem;
@@ -68,6 +70,167 @@ nav {
 
 .nav-back:hover { color: var(--accent-cyan); }
 
+.nav-logout-btn {
+  background: rgba(255, 85, 119, 0.1);
+  color: var(--accent-red);
+  border: 1px solid rgba(255, 85, 119, 0.3);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.nav-logout-btn:hover { background: rgba(255, 85, 119, 0.2); }
+
+/* Auth Card */
+.auth-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2.5rem;
+}
+
+.auth-card h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.4rem;
+  text-align: center;
+}
+
+.auth-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: rgba(255,255,255,0.03);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.auth-tab.active {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  color: #fff;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.auth-form label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: -0.4rem;
+}
+
+.auth-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.auth-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+.auth-submit {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  border: none;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+  font-family: inherit;
+}
+
+.auth-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--glow-cyan); }
+.auth-submit:active { transform: translateY(0); }
+.auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.auth-message {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  display: none;
+}
+
+.auth-message.error {
+  display: block;
+  background: rgba(255, 85, 119, 0.1);
+  border: 1px solid rgba(255, 85, 119, 0.3);
+  color: #ff8aa3;
+}
+
+.auth-message.success {
+  display: block;
+  background: rgba(0, 255, 136, 0.08);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  color: var(--accent-green);
+}
+
+.auth-link {
+  color: var(--accent-cyan);
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
 /* Dashboard Content */
 .dashboard {
   flex: 1;
@@ -75,14 +238,14 @@ nav {
   width: 100%;
   margin: 0 auto;
   padding: 3rem 2rem;
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 2rem;
 }
 
-.dashboard-header {
-  text-align: center;
-}
+.dashboard.visible { display: flex; }
+
+.dashboard-header { text-align: center; }
 
 .dashboard-header h1 {
   font-size: clamp(1.5rem, 4vw, 2.2rem);
@@ -94,12 +257,8 @@ nav {
   margin-bottom: 0.4rem;
 }
 
-.dashboard-header p {
-  color: var(--text-secondary);
-  font-size: 1rem;
-}
+.dashboard-header p { color: var(--text-secondary); font-size: 1rem; }
 
-/* Chat Area */
 .chat-container {
   flex: 1;
   backdrop-filter: blur(20px);
@@ -160,7 +319,6 @@ nav {
   color: #fff;
 }
 
-/* Input */
 .chat-input-area {
   display: flex;
   gap: 0.75rem;
@@ -194,12 +352,12 @@ nav {
   font-weight: 600;
   cursor: pointer;
   transition: transform var(--transition), box-shadow var(--transition);
+  font-family: inherit;
 }
 
 .chat-send-btn:hover { transform: translateY(-2px); box-shadow: var(--glow-cyan); }
 .chat-send-btn:active { transform: translateY(0); }
 
-/* Footer */
 footer {
   text-align: center;
   padding: 2rem;
@@ -208,9 +366,19 @@ footer {
   border-top: 1px solid var(--glass-border);
 }
 
+.loading-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
 @media (max-width: 768px) {
   nav { padding: 0 1rem; }
   .dashboard { padding: 2rem 1rem; }
+  .auth-card { padding: 1.75rem; }
   .chat-input-area { flex-direction: column; }
 }
 </style>
@@ -219,10 +387,46 @@ footer {
 
 <nav>
   <a href="index.html" class="nav-logo">🤖 TusaBots</a>
-  <a href="index.html" class="nav-back">← Back to Home</a>
+  <div class="nav-right" id="nav-right">
+    <a href="index.html" class="nav-back">← Home</a>
+  </div>
 </nav>
 
-<main class="dashboard">
+<!-- Loading state while we check auth -->
+<div class="loading-screen" id="loading-screen">Loading…</div>
+
+<!-- Auth (login / signup) -->
+<div class="auth-wrapper" id="auth-wrapper" style="display: none;">
+  <div class="auth-card">
+    <h1>Welcome</h1>
+    <p class="auth-subtitle">Log in to your TusaBot dashboard</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-mode="login" type="button">Log in</button>
+      <button class="auth-tab" data-mode="signup" type="button">Sign up</button>
+    </div>
+
+    <div class="auth-message" id="auth-message"></div>
+
+    <form class="auth-form" id="auth-form">
+      <label for="auth-name" id="auth-name-label" style="display:none;">Name</label>
+      <input type="text" class="auth-input" id="auth-name" placeholder="Your name" autocomplete="name" style="display:none;">
+
+      <label for="auth-email">Email</label>
+      <input type="email" class="auth-input" id="auth-email" placeholder="you@example.com" autocomplete="email" required>
+
+      <label for="auth-password">Password</label>
+      <input type="password" class="auth-input" id="auth-password" placeholder="••••••••" autocomplete="current-password" required minlength="6">
+
+      <button type="submit" class="auth-submit" id="auth-submit">Log in</button>
+
+      <button type="button" class="auth-link" id="forgot-link">Forgot password?</button>
+    </form>
+  </div>
+</div>
+
+<!-- Dashboard (only visible when logged in) -->
+<main class="dashboard" id="dashboard">
   <div class="dashboard-header">
     <h1>Your TusaBot</h1>
     <p>Your personal AI assistant</p>
@@ -236,7 +440,7 @@ footer {
     </div>
     <div class="chat-input-area">
       <input type="text" class="chat-input" id="chat-input" placeholder="Type a message..." autocomplete="off">
-      <button class="chat-send-btn" id="chat-send" onclick="sendMessage()">Send</button>
+      <button class="chat-send-btn" id="chat-send">Send</button>
     </div>
   </div>
 </main>
@@ -245,10 +449,241 @@ footer {
   <p>TusaBots © 2026</p>
 </footer>
 
-<script>
+<script type="module">
+import {
+  login,
+  signup,
+  logout,
+  getUser,
+  requestPasswordRecovery,
+  handleAuthCallback,
+  acceptInvite,
+  updateUser,
+  onAuthChange,
+  AUTH_EVENTS,
+  AuthError,
+  MissingIdentityError
+} from 'https://esm.sh/@netlify/identity@latest';
+
+const loadingScreen = document.getElementById('loading-screen');
+const authWrapper = document.getElementById('auth-wrapper');
+const dashboard = document.getElementById('dashboard');
+const navRight = document.getElementById('nav-right');
+
+const form = document.getElementById('auth-form');
+const tabs = document.querySelectorAll('.auth-tab');
+const submitBtn = document.getElementById('auth-submit');
+const nameInput = document.getElementById('auth-name');
+const nameLabel = document.getElementById('auth-name-label');
+const emailInput = document.getElementById('auth-email');
+const passwordInput = document.getElementById('auth-password');
+const messageBox = document.getElementById('auth-message');
+const forgotLink = document.getElementById('forgot-link');
+
+let mode = 'login';
+let inviteToken = null;
+
+function showMessage(text, type) {
+  messageBox.textContent = text;
+  messageBox.className = 'auth-message ' + type;
+}
+
+function clearMessage() {
+  messageBox.textContent = '';
+  messageBox.className = 'auth-message';
+}
+
+function setMode(newMode) {
+  mode = newMode;
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.mode === newMode));
+  if (newMode === 'signup') {
+    nameInput.style.display = 'block';
+    nameLabel.style.display = 'block';
+    submitBtn.textContent = 'Create account';
+    passwordInput.autocomplete = 'new-password';
+  } else if (newMode === 'invite') {
+    nameInput.style.display = 'block';
+    nameLabel.style.display = 'block';
+    nameLabel.textContent = 'Name (optional)';
+    emailInput.style.display = 'none';
+    document.querySelector('label[for="auth-email"]').style.display = 'none';
+    submitBtn.textContent = 'Set password & join';
+    passwordInput.autocomplete = 'new-password';
+  } else {
+    nameInput.style.display = 'none';
+    nameLabel.style.display = 'none';
+    submitBtn.textContent = 'Log in';
+    passwordInput.autocomplete = 'current-password';
+  }
+  clearMessage();
+}
+
+tabs.forEach(t => t.addEventListener('click', () => setMode(t.dataset.mode)));
+
+function showAuth() {
+  loadingScreen.style.display = 'none';
+  authWrapper.style.display = 'flex';
+  dashboard.classList.remove('visible');
+}
+
+function showDashboard(user) {
+  loadingScreen.style.display = 'none';
+  authWrapper.style.display = 'none';
+  dashboard.classList.add('visible');
+
+  navRight.innerHTML = '';
+  const emailEl = document.createElement('span');
+  emailEl.className = 'nav-user-email';
+  emailEl.textContent = user.email;
+  const logoutBtn = document.createElement('button');
+  logoutBtn.className = 'nav-logout-btn';
+  logoutBtn.textContent = 'Log out';
+  logoutBtn.addEventListener('click', async () => {
+    try {
+      await logout();
+    } catch (e) { /* ignore */ }
+    window.location.reload();
+  });
+  navRight.appendChild(emailEl);
+  navRight.appendChild(logoutBtn);
+}
+
+function describeError(error) {
+  if (error instanceof MissingIdentityError) {
+    return 'Identity is not enabled yet. If running locally, use `netlify dev`. Otherwise, deploy the site so Identity activates.';
+  }
+  if (error instanceof AuthError) {
+    switch (error.status) {
+      case 401: return 'Invalid email or password.';
+      case 403: return 'Sign-ups are turned off for this site. Open the Netlify dashboard → Identity → Registration and switch to "Open", or invite yourself from the Identity tab.';
+      case 422: return 'Please check the email and password (password must be at least 6 characters).';
+      case 404: return 'Account not found.';
+      default: return error.message || 'Something went wrong. Try again.';
+    }
+  }
+  return error?.message || 'Unexpected error. Try again.';
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearMessage();
+  submitBtn.disabled = true;
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  const name = nameInput.value.trim();
+
+  try {
+    if (mode === 'signup') {
+      const user = await signup(email, password, name ? { full_name: name } : undefined);
+      if (user.emailVerified) {
+        showMessage('Account created. Logging you in…', 'success');
+        showDashboard(user);
+      } else {
+        showMessage('Account created! Check your email to confirm before logging in.', 'success');
+      }
+    } else if (mode === 'invite') {
+      const user = await acceptInvite(inviteToken, password);
+      if (name) {
+        try { await updateUser({ data: { full_name: name } }); } catch (_) {}
+      }
+      showMessage('Welcome! You are logged in.', 'success');
+      showDashboard(user);
+    } else {
+      const user = await login(email, password);
+      showDashboard(user);
+    }
+  } catch (error) {
+    showMessage(describeError(error), 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+forgotLink.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  if (!email) {
+    showMessage('Enter your email above first, then click "Forgot password?"', 'error');
+    return;
+  }
+  clearMessage();
+  try {
+    await requestPasswordRecovery(email);
+    showMessage('Recovery email sent. Check your inbox.', 'success');
+  } catch (error) {
+    showMessage(describeError(error), 'error');
+  }
+});
+
+onAuthChange((event, user) => {
+  if (event === AUTH_EVENTS.LOGOUT) {
+    showAuth();
+  } else if (event === AUTH_EVENTS.LOGIN && user) {
+    showDashboard(user);
+  }
+});
+
+(async function bootstrap() {
+  try {
+    const callbackResult = await handleAuthCallback();
+    if (callbackResult) {
+      if (callbackResult.type === 'invite' && callbackResult.token) {
+        inviteToken = callbackResult.token;
+        loadingScreen.style.display = 'none';
+        authWrapper.style.display = 'flex';
+        setMode('invite');
+        showMessage('You have been invited! Choose a password to finish creating your account.', 'success');
+        return;
+      }
+      if (callbackResult.type === 'recovery' && callbackResult.user) {
+        loadingScreen.style.display = 'none';
+        authWrapper.style.display = 'flex';
+        setMode('login');
+        passwordInput.placeholder = 'New password';
+        submitBtn.textContent = 'Set new password';
+        showMessage('Enter a new password below to complete the reset.', 'success');
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          submitBtn.disabled = true;
+          try {
+            await updateUser({ password: passwordInput.value });
+            showMessage('Password updated! Loading dashboard…', 'success');
+            const u = await getUser();
+            if (u) showDashboard(u);
+          } catch (error) {
+            showMessage(describeError(error), 'error');
+          } finally {
+            submitBtn.disabled = false;
+          }
+        };
+        return;
+      }
+      if ((callbackResult.type === 'oauth' || callbackResult.type === 'confirmation' || callbackResult.type === 'email_change') && callbackResult.user) {
+        showDashboard(callbackResult.user);
+        return;
+      }
+    }
+  } catch (error) {
+    showMessage(describeError(error), 'error');
+  }
+
+  try {
+    const user = await getUser();
+    if (user) {
+      showDashboard(user);
+    } else {
+      showAuth();
+    }
+  } catch (error) {
+    showAuth();
+    showMessage(describeError(error), 'error');
+  }
+})();
+
+/* ===== Chat (placeholder) ===== */
 const messagesEl = document.getElementById('chat-messages');
-const placeholder = document.getElementById('chat-placeholder');
-const input = document.getElementById('chat-input');
+const chatInput = document.getElementById('chat-input');
+const chatSend = document.getElementById('chat-send');
 
 const botReplies = [
   "I'm here! This is a placeholder — full AI coming soon. 🚀",
@@ -259,6 +694,7 @@ const botReplies = [
 ];
 
 function addBubble(text, type) {
+  const placeholder = document.getElementById('chat-placeholder');
   if (placeholder) placeholder.remove();
   const div = document.createElement('div');
   div.className = 'chat-bubble ' + type;
@@ -268,16 +704,17 @@ function addBubble(text, type) {
 }
 
 function sendMessage() {
-  const text = input.value.trim();
+  const text = chatInput.value.trim();
   if (!text) return;
-  input.value = '';
+  chatInput.value = '';
   addBubble(text, 'user');
   setTimeout(() => {
     addBubble(botReplies[Math.floor(Math.random() * botReplies.length)], 'bot');
   }, 600);
 }
 
-input.addEventListener('keydown', (e) => {
+chatSend.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendMessage();
 });
 </script>
