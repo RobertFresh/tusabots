@@ -68,6 +68,39 @@ nav {
 
 .nav-back:hover { color: var(--accent-cyan); }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.nav-user-email {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-logout-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border);
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition);
+}
+
+.nav-logout-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-cyan);
+}
+
 /* Dashboard Content */
 .dashboard {
   flex: 1;
@@ -219,7 +252,10 @@ footer {
 
 <nav>
   <a href="index.html" class="nav-logo">🤖 TusaBots</a>
-  <a href="index.html" class="nav-back">← Back to Home</a>
+  <div class="nav-actions">
+    <span class="nav-user-email" id="nav-user-email"></span>
+    <button class="nav-logout-btn" id="logout-btn" type="button">Log out</button>
+  </div>
 </nav>
 
 <main class="dashboard">
@@ -280,6 +316,58 @@ function sendMessage() {
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendMessage();
 });
+</script>
+
+<script type="module">
+import {
+  getUser,
+  logout,
+  handleAuthCallback,
+  onAuthChange,
+  AUTH_EVENTS,
+  MissingIdentityError,
+} from 'https://esm.sh/@netlify/identity@1?bundle';
+
+const emailEl = document.getElementById('nav-user-email');
+const logoutBtn = document.getElementById('logout-btn');
+const headerEl = document.querySelector('.dashboard-header h1');
+
+logoutBtn.addEventListener('click', async () => {
+  logoutBtn.disabled = true;
+  try {
+    await logout();
+  } catch (err) {
+    console.warn('Logout error', err);
+  }
+  window.location.href = 'index.html';
+});
+
+onAuthChange((event) => {
+  if (event === AUTH_EVENTS.LOGOUT) {
+    window.location.href = 'index.html';
+  }
+});
+
+(async function gate() {
+  try {
+    await handleAuthCallback();
+    const user = await getUser();
+    if (!user) {
+      window.location.href = 'index.html';
+      return;
+    }
+    const label = user.user_metadata?.full_name || user.email || 'Account';
+    emailEl.textContent = user.email || '';
+    if (headerEl) headerEl.textContent = `Hi ${label.split('@')[0]}`;
+  } catch (error) {
+    if (error instanceof MissingIdentityError) {
+      emailEl.textContent = 'Identity not enabled';
+      return;
+    }
+    console.warn('Auth check failed', error);
+    window.location.href = 'index.html';
+  }
+})();
 </script>
 
 </body>
