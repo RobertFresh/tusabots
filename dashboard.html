@@ -285,9 +285,10 @@ input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendMessage();
 });
 
-// Auth guard
-const user = netlifyIdentity.currentUser();
-if (!user) { window.location.href = '/'; }
+// Auth guard — wait for widget init
+netlifyIdentity.on('init', (user) => {
+  if (!user) window.location.href = '/';
+});
 netlifyIdentity.on('logout', () => window.location.href = '/');
 </script>
 
