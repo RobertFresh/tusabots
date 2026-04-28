@@ -252,6 +252,7 @@ footer {
   .robot-svg { width: 200px; height: 288px; }
 }
 </style>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
   </div>
 
@@ -266,7 +267,7 @@ footer {
 <!-- Navigation -->
 <nav>
   <div class="nav-logo">🤖 TusaBots</div>
-  <a href="dashboard.html" class="nav-login-btn">Login</a>
+  <button class="nav-login-btn" onclick="netlifyIdentity.open()">Login</button>
 </nav>
 
 
@@ -446,5 +447,12 @@ footer {
 })();
 </script>
 
+<script>
+  // Redirect to dashboard after login
+  netlifyIdentity.on('login', () => {
+    netlifyIdentity.close();
+    window.location.href = '/dashboard.html';
+  });
+</script>
 
 </body></html>
