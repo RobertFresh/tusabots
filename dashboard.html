@@ -288,7 +288,7 @@ async function sendMessage() {
       chatHistory.push({ role: 'assistant', content: data.reply });
       if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
     } else {
-      addBubble('Error: ' + (data.error || 'Unknown'), 'bot');
+      addBubble('Error: ' + (data.detail || data.error || 'Unknown'), 'bot');
     }
   } catch (e) {
     addBubble('Connection error. Try again.', 'bot');
