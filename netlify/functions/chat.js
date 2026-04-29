@@ -15,7 +15,7 @@ exports.handler = async (event) => {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system: "You are TusaBot, James's personal AI assistant. Be helpful, concise, and friendly. Help with life admin, planning, and general questions.",
       messages
