@@ -254,13 +254,7 @@ const messagesEl = document.getElementById('chat-messages');
 const placeholder = document.getElementById('chat-placeholder');
 const input = document.getElementById('chat-input');
 
-const botReplies = [
-  "I'm here! This is a placeholder — full AI coming soon. 🚀",
-  "Great question! Backend integration is on the way. ✨",
-  "Beep boop! I can't think yet, but I will soon. 🤖",
-  "Stay tuned — real conversations are coming! 🌟",
-  "Noted! Once I'm connected, I'll be much smarter. 🧠"
-];
+let chatHistory = [];
 
 function addBubble(text, type) {
   if (placeholder) placeholder.remove();
@@ -271,14 +265,37 @@ function addBubble(text, type) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function sendMessage() {
+async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
   addBubble(text, 'user');
-  setTimeout(() => {
-    addBubble(botReplies[Math.floor(Math.random() * botReplies.length)], 'bot');
-  }, 600);
+
+  const sendBtn = document.getElementById('chat-send');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '...';
+
+  try {
+    const res = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history: chatHistory })
+    });
+    const data = await res.json();
+    if (data.reply) {
+      addBubble(data.reply, 'bot');
+      chatHistory.push({ role: 'user', content: text });
+      chatHistory.push({ role: 'assistant', content: data.reply });
+      if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+    } else {
+      addBubble('Error: ' + (data.error || 'Unknown'), 'bot');
+    }
+  } catch (e) {
+    addBubble('Connection error. Try again.', 'bot');
+  }
+
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'Send';
 }
 
 input.addEventListener('keydown', (e) => {
