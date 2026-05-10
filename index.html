@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<!-- saved from url=(0035)https://twelve-rats-retire.loca.lt/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TusaBots — Interactive Robot</title>
+<style>
+/* ===== CSS Custom Properties ===== */
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #0d1117;
+  --bg-card: rgba(15, 20, 35, 0.6);
+  --accent-cyan: #00d4ff;
+  --accent-blue: #4a6cf7;
+  --accent-purple: #7b61ff;
+  --accent-green: #00ff88;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+  --glass-bg: rgba(13, 17, 23, 0.7);
+  --glass-border: rgba(0, 212, 255, 0.15);
+  --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.3);
+  --glow-blue: 0 0 20px rgba(74, 108, 247, 0.3);
+  --radius: 16px;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ===== Animated Background ===== */
+#bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ===== Navigation ===== */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
+  padding: 0 2rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-logo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+
+
+/* ===== Sections ===== */
+section {
+  position: relative;
+  z-index: 1;
+  padding: 6rem 2rem 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ===== Hero ===== */
+.hero {
+  text-align: center;
+  padding-top: 10rem;
+  padding-bottom: 4rem;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.hero p {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto 3rem;
+}
+
+
+
+.robot-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+
+
+/* ===== Speech Bubble ===== */
+.speech-bubble {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px 16px 16px 4px;
+  padding: 1rem 1.5rem;
+  max-width: 350px;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  position: relative;
+}
+
+.speech-bubble.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 20px;
+  width: 16px;
+  height: 8px;
+  background: var(--bg-card);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+
+
+/* ===== Robot SVG ===== */
+.robot-stage {
+  width: 100%;
+  max-width: 500px;
+  height: 420px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.robot-wrapper {
+  position: relative;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Idle floating animation */
+.robot-wrapper.idle {
+  animation: idleFloat 3s ease-in-out infinite;
+}
+
+@keyframes idleFloat {
+  0%, 100% { transform: translateY(0) rotateY(0deg); }
+  50% { transform: translateY(-10px) rotateY(0deg); }
+}
+
+/* Interactive states */
+.robot-wrapper { perspective: 600px; transform-style: preserve-3d; cursor: grab; user-select: none; }
+.robot-wrapper:active { cursor: grabbing; }
+.robot-wrapper.clicked { animation: jumpBounce 0.5s ease; }
+.robot-wrapper.dizzy { animation: spinDizzy 0.8s ease-out; }
+
+@keyframes jumpBounce {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-30px) scale(1.05); }
+  50% { transform: translateY(-30px) scaleX(0.95) scaleY(1.08); }
+  80% { transform: translateY(5px) scale(0.98); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes spinDizzy {
+  0% { transform: rotateY(0deg) scale(1); }
+  50% { transform: rotateY(360deg) scale(1.1); }
+  100% { transform: rotateY(720deg) scale(1); }
+}
+
+/* Robot SVG styles */
+.robot-svg { width: 260px; height: 374px; filter: drop-shadow(0 10px 30px rgba(0, 212, 255, 0.2)); }
+
+/* Eye glow pulse */
+.robot-eye {
+  animation: eyePulse 2s ease-in-out infinite;
+}
+
+@keyframes eyePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Antenna blink */
+.antenna-light {
+  animation: antennaBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes antennaBlink {
+  0%, 100% { fill: var(--accent-cyan); filter: drop-shadow(0 0 6px var(--accent-cyan)); }
+  50% { fill: var(--accent-purple); filter: drop-shadow(0 0 6px var(--accent-purple)); }
+}
+
+
+
+
+
+/* ===== Footer ===== */
+footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+
+
+/* ===== Login Button ===== */
+.nav-login-btn {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  color: #fff;
+  border: none;
+  padding: 0.45rem 1.2rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition);
+}
+
+.nav-login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-cyan);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  nav { padding: 0 1rem; }
+  section { padding: 4rem 1rem 2rem; }
+  .hero { padding-top: 7rem; }
+  .robot-stage { height: 360px; }
+  .robot-svg { width: 200px; height: 288px; }
+}
+</style>
+<script type='text/javascript' src='https://api.netlify.com/nLt_Knw8OlyCX1yMFYPhucgV0IHZBnTQaHb1ExEoohfGrc4NfTLPvHXT3E7NOwR0ReH_pteQtNJ9dM1lFdBGo0vqqUCwQ-mQa9m1yA5PRTFbm9c8r3JHZ54x7KwHxmpiC-jCVrUH4CHVnMIidwiZYlPkbtipd2DieobOzL2ojNmPLJjkddNKMESNovvtDZrpHMiRnfvtLQMZlYOezQOQWDEmP9ouXy170_NEXm_WaQWbQwQpCHHlP2D3Lhld1FcNwfDi4Sd3kuR_1tPEk7Z_vZVaE-OjXhU62IQDFSSjZGFAKP337cFWwVFUeR0MWy0emPWGXa2YJOUfZwSxCsK46yEKBjIS4NHFRFv0q2TCPQRrPug3DUX9JY1o2fwPKabMMSdJk_O8WKXED0IqnFbivAiv1wAPUWnSdoHf3grvGus-n7wUGeEXp_J57p_t9oRl0--ntn04xug9x718wPqntUyfd_DxwwwfrtnP_HohCCicYtImcyqQnqGBWPzsmQc_Tj0PG-pwyF43zhn7yP1W'></script><script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+  </div>
+
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</body>
+</html>
+<body>
+
+<!-- Animated Background Canvas -->
+<canvas id="bg-canvas" width="1193" height="554"></canvas>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-logo">🤖 TusaBots</div>
+  <button class="nav-login-btn" onclick="netlifyIdentity.open()">Login</button>
+</nav>
+
+
+
+<!-- Hero Section with Robot -->
+<section id="home" class="hero">
+  <h1>Welcome to TusaBots</h1>
+
+
+  <div class="robot-container" data-np-autofill-form-type="other" data-np-checked="1" data-np-watching="1">
+
+
+    <!-- Speech Bubble -->
+    <div class="speech-bubble visible" id="speech-bubble">
+      <span id="speech-text">Hi there! I'm TusaBot ✨</span>
+    </div>
+
+    <!-- Robot Stage -->
+    <div class="robot-stage" id="robot-stage">
+      <div class="robot-wrapper idle" id="robot">
+        <svg class="robot-svg" viewBox="0 0 180 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Antenna -->
+          <line x1="90" y1="30" x2="90" y2="8" stroke="var(--accent-cyan)" stroke-width="3" stroke-linecap="round"></line>
+          <circle class="antenna-light" cx="90" cy="6" r="5" fill="var(--accent-cyan)"></circle>
+          <!-- Head -->
+          <rect x="45" y="30" width="90" height="65" rx="18" fill="url(#headGrad)" stroke="var(--accent-cyan)" stroke-width="1.5" stroke-opacity="0.4"></rect>
+          <!-- Eyes -->
+          <circle class="robot-eye" cx="70" cy="58" r="9" fill="var(--accent-cyan)">
+            <animate attributeName="r" values="9;8;9" dur="3s" repeatCount="indefinite"></animate>
+          </circle>
+          <circle class="robot-eye" cx="110" cy="58" r="9" fill="var(--accent-cyan)">
+            <animate attributeName="r" values="9;8;9" dur="3s" repeatCount="indefinite"></animate>
+          </circle>
+          <!-- Eye inner glow -->
+          <circle cx="70" cy="58" r="4" fill="#fff" opacity="0.8"></circle>
+          <circle cx="110" cy="58" r="4" fill="#fff" opacity="0.8"></circle>
+          <!-- Mouth -->
+          <rect x="72" y="75" width="36" height="5" rx="2.5" fill="var(--accent-cyan)" opacity="0.6"></rect>
+          <!-- Neck -->
+          <rect x="82" y="95" width="16" height="12" rx="3" fill="url(#bodyGrad)"></rect>
+          <!-- Body -->
+          <rect x="35" y="107" width="110" height="80" rx="16" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1.5" stroke-opacity="0.3"></rect>
+          <!-- Chest light -->
+          <circle cx="90" cy="140" r="12" fill="none" stroke="var(--accent-cyan)" stroke-width="1.5" opacity="0.5">
+            <animate attributeName="r" values="12;14;12" dur="2s" repeatCount="indefinite"></animate>
+            <animate attributeName="opacity" values="0.5;0.8;0.5" dur="2s" repeatCount="indefinite"></animate>
+          </circle>
+          <circle cx="90" cy="140" r="6" fill="var(--accent-cyan)" opacity="0.7">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"></animate>
+          </circle>
+          <!-- Arms -->
+          <rect id="left-arm" x="10" y="112" width="22" height="55" rx="11" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></rect>
+          <rect id="right-arm" x="148" y="112" width="22" height="55" rx="11" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></rect>
+          <!-- Legs -->
+          <rect x="52" y="187" width="24" height="50" rx="10" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></rect>
+          <rect x="104" y="187" width="24" height="50" rx="10" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></rect>
+          <!-- Feet -->
+          <ellipse cx="64" cy="240" rx="18" ry="8" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></ellipse>
+          <ellipse cx="116" cy="240" rx="18" ry="8" fill="url(#bodyGrad)" stroke="var(--accent-cyan)" stroke-width="1" stroke-opacity="0.3"></ellipse>
+          <!-- Gradients -->
+          <defs>
+            <linearGradient id="headGrad" x1="45" y1="30" x2="135" y2="95">
+              <stop offset="0%" stop-color="#1a2235"></stop>
+              <stop offset="100%" stop-color="#0f1923"></stop>
+            </linearGradient>
+            <linearGradient id="bodyGrad" x1="35" y1="107" x2="145" y2="187">
+              <stop offset="0%" stop-color="#162033"></stop>
+              <stop offset="100%" stop-color="#0c1520"></stop>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+
+  </div>
+</section>
+
+
+
+<!-- Footer -->
+<footer>
+  <p>TusaBots © 2026</p>
+</footer>
+
+<script>
+/* ===== Background Particle System ===== */
+(function initBackground() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  const PARTICLE_COUNT = 60;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 2 + 0.5;
+      this.speedX = (Math.random() - 0.5) * 0.3;
+      this.speedY = (Math.random() - 0.5) * 0.3;
+      this.opacity = Math.random() * 0.5 + 0.1;
+      this.pulse = Math.random() * Math.PI * 2;
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.pulse += 0.02;
+      if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+    }
+    draw() {
+      const o = this.opacity + Math.sin(this.pulse) * 0.15;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0, 212, 255, ${Math.max(0, o)})`;
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+
+    // Draw faint connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(0, 212, 255, ${0.06 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+/* ===== Speech Bubble Rotate ===== */
+(function initSpeechRotation() {
+  const messages = [
+    "Hi there! I'm TusaBot ✨",
+    "Log in to start chatting! 🚀",
+    "Your AI companion awaits 🤖",
+    "Built to help, ready to learn 🧠"
+  ];
+  const textEl = document.getElementById('speech-text');
+  const bubble = document.getElementById('speech-bubble');
+  let i = 0;
+
+  // Show first message
+  setTimeout(() => bubble.classList.add('visible'), 600);
+
+  setInterval(() => {
+    i = (i + 1) % messages.length;
+    bubble.classList.remove('visible');
+    setTimeout(() => {
+      textEl.textContent = messages[i];
+      bubble.classList.add('visible');
+    }, 400);
+  }, 5000);
+})();
+
+/* ===== Robot Interactions ===== */
+(function initRobotInteractions() {
+  const robot = document.getElementById('robot');
+  let dragging = false, startX = 0, currentRotY = 0;
+
+  // Single click — bounce
+  robot.addEventListener('click', (e) => {
+    if (dragging) return;
+    robot.classList.remove('idle', 'clicked');
+    void robot.offsetWidth;
+    robot.classList.add('clicked');
+    setTimeout(() => { robot.classList.remove('clicked'); robot.classList.add('idle'); }, 500);
+  });
+
+  // Double click — dizzy spin
+  robot.addEventListener('dblclick', (e) => {
+    e.preventDefault();
+    robot.classList.remove('idle', 'clicked', 'dizzy');
+    void robot.offsetWidth;
+    robot.classList.add('dizzy');
+    setTimeout(() => { robot.classList.remove('dizzy'); robot.classList.add('idle'); }, 800);
+  });
+
+  // Drag to rotate 360
+  function onStart(x) { dragging = false; startX = x; robot.classList.remove('idle'); }
+  function onMove(x) {
+    const dx = x - startX;
+    if (Math.abs(dx) > 5) dragging = true;
+    currentRotY = dx * 0.8;
+    robot.style.transform = `rotateY(${currentRotY}deg)`;
+  }
+  function onEnd() {
+    if (dragging) {
+      robot.style.transition = 'transform 0.6s cubic-bezier(0.34,1.56,0.64,1)';
+      robot.style.transform = 'rotateY(0deg)';
+      setTimeout(() => { robot.style.transition = ''; robot.style.transform = ''; robot.classList.add('idle'); }, 600);
+    } else {
+      robot.classList.add('idle');
+    }
+    dragging = false; currentRotY = 0;
+  }
+
+  // Mouse
+  robot.addEventListener('mousedown', (e) => { e.preventDefault(); onStart(e.clientX); });
+  window.addEventListener('mousemove', (e) => { if (startX && !robot.classList.contains('idle')) onMove(e.clientX); });
+  window.addEventListener('mouseup', () => { if (startX) onEnd(); startX = 0; });
+
+  // Touch
+  robot.addEventListener('touchstart', (e) => { onStart(e.touches[0].clientX); }, { passive: true });
+  robot.addEventListener('touchmove', (e) => { onMove(e.touches[0].clientX); }, { passive: true });
+  robot.addEventListener('touchend', () => { onEnd(); startX = 0; });
+})();
+</script>
+
+<script>
+  // Redirect to dashboard after login
+  netlifyIdentity.on('login', () => {
+    netlifyIdentity.close();
+    window.location.href = '/dashboard.html';
+  });
+</script>
+
+</body></html>
