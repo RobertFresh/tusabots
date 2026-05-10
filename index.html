@@ -272,11 +272,10 @@ footer {
   .robot-svg { width: 200px; height: 288px; }
 }
 </style>
-<script type='text/javascript' src='https://api.netlify.com/nLt_Knw8OlyCX1yMFYPhucgV0IHZBnTQaHb1ExEoohfGrc4NfTLPvHXT3E7NOwR0ReH_pteQtNJ9dM1lFdBGo0vqqUCwQ-mQa9m1yA5PRTFbm9c8r3JHZ54x7KwHxmpiC-jCVrUH4CHVnMIidwiZYlPkbtipd2DieobOzL2ojNmPLJjkddNKMESNovvtDZrpHMiRnfvtLQMZlYOezQOQWDEmP9ouXy170_NEXm_WaQWbQwQpCHHlP2D3Lhld1FcNwfDi4Sd3kuR_1tPEk7Z_vZVaE-OjXhU62IQDFSSjZGFAKP337cFWwVFUeR0MWy0emPWGXa2YJOUfZwSxCsK46yEKBjIS4NHFRFv0q2TCPQRrPug3DUX9JY1o2fwPKabMMSdJk_O8WKXED0IqnFbivAiv1wAPUWnSdoHf3grvGus-n7wUGeEXp_J57p_t9oRl0--ntn04xug9x718wPqntUyfd_DxwwwfrtnP_HohCCicYtImcyqQnqGBWPzsmQc_Tj0PG-pwyF43zhn7yP1W'></script><script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
   </div>
 
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
 </body>
 </html>
 <body>
@@ -287,7 +286,7 @@ footer {
 <!-- Navigation -->
 <nav>
   <div class="nav-logo">🤖 TusaBots</div>
-  <button class="nav-login-btn" onclick="netlifyIdentity.open()">Login</button>
+  <button class="nav-login-btn" href="#">Login</button>
 </nav>
 
 
@@ -522,8 +521,6 @@ footer {
 
 <script>
   // Redirect to dashboard after login
-  netlifyIdentity.on('login', () => {
-    netlifyIdentity.close();
     window.location.href = '/dashboard.html';
   });
 </script>

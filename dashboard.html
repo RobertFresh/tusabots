@@ -213,8 +213,6 @@ footer {
   .dashboard { padding: 2rem 1rem; }
   .chat-input-area { flex-direction: column; }
 }
-</style>
-<script type='text/javascript' src='https://api.netlify.com/nmAkekuJkZGtG5bcRkPrD63WsPD8erfpAhth5N7B56wpGfOS9hrY2vThQHZIs7nWm15ga5TTX3va6UfKbTf81jrQd65G03mxc1JLRz2h9B7V6TJG9XTDpOWBcyTiwyCPXFALZxj3D8CH-81HiI9LhYlarEQye-5NieNahVHJ4Uhlo9Xle-yTo5uUFR8tdnOoFM-XzuFFXSb8DEKsq5TsVmGNcBn36FlkoEqFakQ9ajpeFfc2PMpwW4ozM0StckHUdT0sIdrUFzbMj-IVGunJSmh9HYlbKvFCNccxDhDiinV0hynz0R9N-Jp4-50PKofEtHm5W7hu663agcV9BuiiyOeJQ1vsKMfBFWw-Ij8bX89v_P-WWKifbAxLEeu9-mjoxYqAIfX1L5YNHncmmJz7xBQxjXM-AH7NcUHxnnWcSkX9rRpPoZoGPhBdXxg-tk9rQDyWeljpAljwvnsyPmQREhvrcaaZ-HQYBUFu8EGme6Wcpl1qivYlEj5CuommGdVgXVj9r51LS0nOPKsS9KcZjhleKg'></script><script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
 
@@ -222,7 +220,6 @@ footer {
   <a href="index.html" class="nav-logo">🤖 TusaBots</a>
   <div style="display:flex;align-items:center;gap:1rem">
     <a href="index.html" class="nav-back">← Home</a>
-    <button class="nav-back" style="background:none;border:none;cursor:pointer;font-family:inherit" onclick="netlifyIdentity.logout()">Logout</button>
   </div>
 </nav>
 
@@ -303,10 +300,8 @@ input.addEventListener('keydown', (e) => {
 });
 
 // Auth guard — wait for widget init
-netlifyIdentity.on('init', (user) => {
   if (!user) window.location.href = '/';
 });
-netlifyIdentity.on('logout', () => window.location.href = '/');
 </script>
 
 </body>
