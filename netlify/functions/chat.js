@@ -23,13 +23,16 @@ async function saveMessage(userId, role, content) {
   await supabase.from('messages').insert({ user_id: userId, role, content });
 }
 
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' };
   }
 
-  const { message, userId = 'global' } = JSON.parse(event.body);
+  const { message, userId: bodyUserId = 'global' } = JSON.parse(event.body);
   if (!message) return { statusCode: 400, body: JSON.stringify({ error: 'No message' }) };
+
+  const identityUser = context.clientContext && context.clientContext.user;
+  const userId = identityUser ? identityUser.sub : bodyUserId;
 
   // Load memory + add new user message
   const history = await getMemory(userId);

@@ -263,6 +263,130 @@ footer {
   box-shadow: var(--glow-cyan);
 }
 
+/* ===== Auth Modal ===== */
+.auth-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-overlay.active {
+  display: flex;
+}
+
+.auth-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+}
+
+.auth-modal h2 {
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #fff, var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+}
+
+.auth-modal input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 0.75rem;
+  transition: border-color var(--transition);
+}
+
+.auth-modal input:focus {
+  border-color: var(--accent-cyan);
+}
+
+.auth-modal input::placeholder {
+  color: var(--text-muted);
+}
+
+.auth-submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  color: #fff;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.auth-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-cyan);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.auth-toggle {
+  text-align: center;
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.auth-toggle a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.auth-toggle a:hover {
+  text-decoration: underline;
+}
+
+.auth-error {
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-bottom: 0.75rem;
+  display: none;
+}
+
+.auth-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.auth-close:hover {
+  color: var(--text-primary);
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   nav { padding: 0 1rem; }
@@ -273,11 +397,6 @@ footer {
 }
 </style>
 </head>
-  </div>
-
-
-</body>
-</html>
 <body>
 
 <!-- Animated Background Canvas -->
@@ -286,8 +405,26 @@ footer {
 <!-- Navigation -->
 <nav>
   <div class="nav-logo">🤖 TusaBots</div>
-  <button class="nav-login-btn" href="#">Login</button>
+  <button class="nav-login-btn" id="nav-login-btn">Login</button>
 </nav>
+
+<!-- Auth Modal -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-modal">
+    <button class="auth-close" id="auth-close">&times;</button>
+    <h2 id="auth-title">Log In</h2>
+    <div class="auth-error" id="auth-error"></div>
+    <form id="auth-form" autocomplete="on">
+      <input type="email" id="auth-email" placeholder="Email" required>
+      <input type="password" id="auth-password" placeholder="Password" required>
+      <button type="submit" class="auth-submit-btn" id="auth-submit">Log In</button>
+    </form>
+    <div class="auth-toggle">
+      <span id="auth-toggle-text">Don't have an account? </span>
+      <a id="auth-toggle-link">Sign Up</a>
+    </div>
+  </div>
+</div>
 
 
 
@@ -519,10 +656,100 @@ footer {
 })();
 </script>
 
+<script src="/js/auth.js"></script>
 <script>
-  // Redirect to dashboard after login
+(async function initAuth() {
+  var result = await TusaAuth.handleAuthCallback();
+  if (result && result.user) {
     window.location.href = '/dashboard.html';
+    return;
+  }
+
+  var user = await TusaAuth.getUser();
+  if (user) {
+    window.location.href = '/dashboard.html';
+    return;
+  }
+
+  var overlay = document.getElementById('auth-overlay');
+  var form = document.getElementById('auth-form');
+  var emailInput = document.getElementById('auth-email');
+  var passwordInput = document.getElementById('auth-password');
+  var submitBtn = document.getElementById('auth-submit');
+  var errorEl = document.getElementById('auth-error');
+  var titleEl = document.getElementById('auth-title');
+  var toggleText = document.getElementById('auth-toggle-text');
+  var toggleLink = document.getElementById('auth-toggle-link');
+  var isSignup = false;
+
+  document.getElementById('nav-login-btn').addEventListener('click', function() {
+    overlay.classList.add('active');
   });
+
+  document.getElementById('auth-close').addEventListener('click', function() {
+    overlay.classList.remove('active');
+    errorEl.style.display = 'none';
+  });
+
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.classList.remove('active');
+      errorEl.style.display = 'none';
+    }
+  });
+
+  toggleLink.addEventListener('click', function() {
+    isSignup = !isSignup;
+    titleEl.textContent = isSignup ? 'Sign Up' : 'Log In';
+    submitBtn.textContent = isSignup ? 'Sign Up' : 'Log In';
+    toggleText.textContent = isSignup ? 'Already have an account? ' : "Don't have an account? ";
+    toggleLink.textContent = isSignup ? 'Log In' : 'Sign Up';
+    errorEl.style.display = 'none';
+  });
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var email = emailInput.value.trim();
+    var password = passwordInput.value;
+    errorEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = isSignup ? 'Signing up...' : 'Logging in...';
+
+    try {
+      if (isSignup) {
+        var newUser = await TusaAuth.signup(email, password);
+        if (newUser.emailVerified) {
+          window.location.href = '/dashboard.html';
+        } else {
+          errorEl.textContent = 'Check your email to confirm your account, then log in.';
+          errorEl.style.display = 'block';
+          errorEl.style.color = '#00ff88';
+          isSignup = false;
+          titleEl.textContent = 'Log In';
+          toggleText.textContent = "Don't have an account? ";
+          toggleLink.textContent = 'Sign Up';
+        }
+      } else {
+        await TusaAuth.login(email, password);
+        window.location.href = '/dashboard.html';
+      }
+    } catch (err) {
+      errorEl.style.color = '#ff6b6b';
+      if (err.status === 401) {
+        errorEl.textContent = 'Invalid email or password.';
+      } else if (err.status === 403) {
+        errorEl.textContent = 'Signups are not currently allowed.';
+      } else if (err.status === 422) {
+        errorEl.textContent = 'Password must be at least 6 characters.';
+      } else {
+        errorEl.textContent = err.message || 'Something went wrong. Try again.';
+      }
+      errorEl.style.display = 'block';
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = isSignup ? 'Sign Up' : 'Log In';
+  });
+})();
 </script>
 
 </body></html>

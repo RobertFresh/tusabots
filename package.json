@@ -2,6 +2,8 @@
   "name": "tusabots",
   "version": "1.0.0",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@netlify/identity": "^1.1.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "esbuild": "^0.28.0"
   }
 }

@@ -208,6 +208,28 @@ footer {
   border-top: 1px solid var(--glass-border);
 }
 
+/* Nav Logout Button */
+.nav-logout-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text-secondary);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.nav-logout-btn:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.nav-user-email {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
 @media (max-width: 768px) {
   nav { padding: 0 1rem; }
   .dashboard { padding: 2rem 1rem; }
@@ -219,6 +241,8 @@ footer {
 <nav>
   <a href="index.html" class="nav-logo">🤖 TusaBots</a>
   <div style="display:flex;align-items:center;gap:1rem">
+    <span class="nav-user-email" id="nav-user-email"></span>
+    <button class="nav-logout-btn" id="nav-logout-btn">Logout</button>
     <a href="index.html" class="nav-back">← Home</a>
   </div>
 </nav>
@@ -246,12 +270,14 @@ footer {
   <p>TusaBots © 2026</p>
 </footer>
 
+<script src="/js/auth.js"></script>
 <script>
 const messagesEl = document.getElementById('chat-messages');
 const placeholder = document.getElementById('chat-placeholder');
 const input = document.getElementById('chat-input');
 
 let chatHistory = [];
+let currentUser = null;
 
 function addBubble(text, type) {
   if (placeholder) placeholder.remove();
@@ -273,10 +299,19 @@ async function sendMessage() {
   sendBtn.textContent = '...';
 
   try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (currentUser && currentUser.token && currentUser.token.access_token) {
+      headers['Authorization'] = 'Bearer ' + currentUser.token.access_token;
+    }
+
     const res = await fetch('/.netlify/functions/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, history: chatHistory })
+      headers: headers,
+      body: JSON.stringify({
+        message: text,
+        userId: currentUser ? currentUser.id : 'global',
+        history: chatHistory
+      })
     });
     const data = await res.json();
     if (data.reply) {
@@ -299,9 +334,26 @@ input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendMessage();
 });
 
-// Auth guard — wait for widget init
-  if (!user) window.location.href = '/';
-});
+(async function initDashboard() {
+  var result = await TusaAuth.handleAuthCallback();
+  if (result && result.user) {
+    currentUser = result.user;
+  } else {
+    currentUser = await TusaAuth.getUser();
+  }
+
+  if (!currentUser) {
+    window.location.href = '/';
+    return;
+  }
+
+  document.getElementById('nav-user-email').textContent = currentUser.email || '';
+
+  document.getElementById('nav-logout-btn').addEventListener('click', async function() {
+    await TusaAuth.logout();
+    window.location.href = '/';
+  });
+})();
 </script>
 
 </body>
