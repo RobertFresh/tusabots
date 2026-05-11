@@ -1,9 +1,10 @@
-// TusaBot chat function — Supabase memory, Anthropic Claude
+const Anthropic = require('@anthropic-ai/sdk');
 const { createClient } = require('@supabase/supabase-js');
 
 const SYSTEM_PROMPT = "You are TusaBot, James's personal AI assistant. Be helpful, concise, and friendly.";
 
-// Supabase memory layer (optional — bot works without it)
+const anthropic = new Anthropic();
+
 const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
   : null;
@@ -29,49 +30,35 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method not allowed' };
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Claude API key not configured. Set ANTHROPIC_API_KEY in Netlify environment variables.' })
-    };
-  }
-
   const { message, userId = 'global' } = JSON.parse(event.body);
   if (!message) return { statusCode: 400, body: JSON.stringify({ error: 'No message' }) };
 
   const history = await getMemory(userId);
   history.push({ role: 'user', content: message });
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-7',
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: history
-    })
-  });
+    });
 
-  if (!res.ok) {
-    const err = await res.text();
-    return { statusCode: 500, body: JSON.stringify({ error: 'API error', detail: err }) };
+    const reply = response.content[0].text;
+
+    saveMessage(userId, 'user', message).catch(() => {});
+    saveMessage(userId, 'assistant', reply).catch(() => {});
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reply })
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'API error', detail: err.message })
+    };
   }
-
-  const data = await res.json();
-  const reply = data.content[0].text;
-
-  // Fire-and-forget memory saves
-  saveMessage(userId, 'user', message).catch(() => {});
-  saveMessage(userId, 'assistant', reply).catch(() => {});
-
-  return {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reply })
-  };
 };
