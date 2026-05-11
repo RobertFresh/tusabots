@@ -4,6 +4,3 @@ publish = "."
 
 [build.environment]
 NODE_VERSION = "22"
-
-[context.production.environment]
-SUPABASE_URL = "https://bmzugcvblitljrawghwx.supabase.co"
