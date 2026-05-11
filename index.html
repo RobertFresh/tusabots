@@ -286,7 +286,7 @@ footer {
 <!-- Navigation -->
 <nav>
   <div class="nav-logo">🤖 TusaBots</div>
-  <button class="nav-login-btn" href="#">Login</button>
+  <a class="nav-login-btn" href="dashboard.html">Login</a>
 </nav>
 
 
@@ -517,12 +517,6 @@ footer {
   robot.addEventListener('touchmove', (e) => { onMove(e.touches[0].clientX); }, { passive: true });
   robot.addEventListener('touchend', () => { onEnd(); startX = 0; });
 })();
-</script>
-
-<script>
-  // Redirect to dashboard after login
-    window.location.href = '/dashboard.html';
-  });
 </script>
 
 </body></html>
