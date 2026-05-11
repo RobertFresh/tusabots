@@ -1,15 +1,16 @@
-// netlify/functions/chat.js
-// TusaBot chat function with Supabase memory layer
+// TusaBot chat function — stateless by default, Supabase memory optional
 const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
 const SYSTEM_PROMPT = "You are TusaBot, James's personal AI assistant. Be helpful, concise, and friendly.";
 
+// Supabase is optional — bot works without it (no memory persistence)
+let supabase = null;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 async function getMemory(userId = 'global', limit = 20) {
+  if (!supabase) return [];
   const { data } = await supabase
     .from('messages')
     .select('role, content')
@@ -20,6 +21,7 @@ async function getMemory(userId = 'global', limit = 20) {
 }
 
 async function saveMessage(userId, role, content) {
+  if (!supabase) return;
   await supabase.from('messages').insert({ user_id: userId, role, content });
 }
 
@@ -28,14 +30,19 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method not allowed' };
   }
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Claude API key not configured. Set ANTHROPIC_API_KEY in Netlify environment variables.' })
+    };
+  }
+
   const { message, userId = 'global' } = JSON.parse(event.body);
   if (!message) return { statusCode: 400, body: JSON.stringify({ error: 'No message' }) };
 
-  // Load memory + add new user message
   const history = await getMemory(userId);
   history.push({ role: 'user', content: message });
 
-  // Call Claude
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -44,7 +51,7 @@ exports.handler = async (event) => {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-3-5-sonnet-latest',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: history
@@ -59,9 +66,9 @@ exports.handler = async (event) => {
   const data = await res.json();
   const reply = data.content[0].text;
 
-  // Save both messages to Supabase
-  await saveMessage(userId, 'user', message);
-  await saveMessage(userId, 'assistant', reply);
+  // Fire-and-forget saves — don't block the response
+  saveMessage(userId, 'user', message).catch(() => {});
+  saveMessage(userId, 'assistant', reply).catch(() => {});
 
   return {
     statusCode: 200,
