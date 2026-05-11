@@ -1,13 +1,12 @@
-// TusaBot chat function — stateless by default, Supabase memory optional
+// TusaBot chat function — Supabase memory, Anthropic Claude
 const { createClient } = require('@supabase/supabase-js');
 
 const SYSTEM_PROMPT = "You are TusaBot, James's personal AI assistant. Be helpful, concise, and friendly.";
 
-// Supabase is optional — bot works without it (no memory persistence)
-let supabase = null;
-if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
+// Supabase memory layer (optional — bot works without it)
+const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  : null;
 
 async function getMemory(userId = 'global', limit = 20) {
   if (!supabase) return [];
@@ -66,7 +65,7 @@ exports.handler = async (event) => {
   const data = await res.json();
   const reply = data.content[0].text;
 
-  // Fire-and-forget saves — don't block the response
+  // Fire-and-forget memory saves
   saveMessage(userId, 'user', message).catch(() => {});
   saveMessage(userId, 'assistant', reply).catch(() => {});
 
