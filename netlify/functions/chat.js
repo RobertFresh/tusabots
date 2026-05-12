@@ -33,30 +33,33 @@ async function saveMessage(userId, role, content) {
   try {
     const { data, error } = await supabase
       .from('messages')
-      .insert({ user_id: userId, role, content })
-      .select();
+      .insert({ user_id: userId, role, content });
     if (error) {
       console.error('saveMessage insert error:', JSON.stringify(error));
       return { success: false, reason: error.message };
     }
-    console.log('saveMessage success:', data?.[0]?.id);
-    return { success: true, id: data?.[0]?.id };
+    console.log('saveMessage success for', role);
+    return { success: true };
   } catch(e) {
     console.error('saveMessage exception:', e.message);
     return { success: false, reason: e.message };
   }
 }
 
-// Debug endpoint — GET /.netlify/functions/chat?debug=1
 exports.handler = async (event) => {
-  // Debug endpoint
+  // Debug endpoint — GET /.netlify/functions/chat?debug=1
   if (event.httpMethod === 'GET' && event.queryStringParameters?.debug === '1') {
-    const testInsert = supabase ? await supabase
-      .from('messages')
-      .insert({ user_id: 'debug', role: 'user', content: 'debug_test_' + Date.now() })
-      .select('id')
-      .single()
-      .catch(e => ({ error: e.message })) : { error: 'no supabase' };
+    let testInsert = { tried: false };
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .insert({ user_id: 'debug', role: 'user', content: 'debug_test_' + Date.now() });
+        testInsert = { success: !error, data, error: error?.message };
+      } catch(e) {
+        testInsert = { error: e.message };
+      }
+    }
 
     return {
       statusCode: 200,
@@ -100,7 +103,7 @@ exports.handler = async (event) => {
   const history = await getMemory(userId);
   console.log('Retrieved', history.length, 'history messages');
 
-  // Build messages array for Claude
+  // Build messages array for Claude — include system prompt as first message
   const messages = [
     ...history.map(m => ({ role: m.role, content: m.content })),
     { role: 'user', content: message }
@@ -138,10 +141,10 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Claude call failed: ' + e.message }) };
   }
 
-  // Save to Supabase — wait for both to complete so we can return errors
+  // Save to Supabase — wait for both to complete
   const userSave = await saveMessage(userId, 'user', message);
   const asstSave = await saveMessage(userId, 'assistant', reply);
-  console.log('User save:', userSave, 'Assistant save:', asstSave);
+  console.log('User save:', JSON.stringify(userSave), 'Assistant save:', JSON.stringify(asstSave));
 
   return {
     statusCode: 200,
