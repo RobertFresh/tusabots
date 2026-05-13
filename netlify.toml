@@ -4,3 +4,8 @@ publish = "."
 
 [build.environment]
 NODE_VERSION = "22"
+
+[[redirects]]
+from = "/chat"
+to = "/dashboard.html"
+status = 200
