@@ -41,7 +41,8 @@ export default async (request, context) => {
   const importMapScript = `<script type="importmap">
 {
   "imports": {
-    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/index.js"
+    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/index.js",
+    "@supabase/auth-js": "https://cdn.jsdelivr.net/npm/@supabase/auth-js@2/dist/module/index.js"
   }
 }
 <\/script>`;
