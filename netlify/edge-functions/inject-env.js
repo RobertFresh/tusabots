@@ -1,28 +1,24 @@
 // netlify/edge-functions/inject-env.js
 //
-// Netlify Edge Function — injects VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
-// into every HTML page by replacing placeholder window.__SUPABASE_*__ values.
+// Injects VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY into every HTML page
+// as the VERY FIRST script tag — before any other scripts run.
 //
-// Why an edge function?  Because this is a no-build-step static site. The HTML
-// files are pre-built and served as-is, so there is no webpack/vite process
-// where NODE_ENV vars could be injected at build time. The edge function sits
-// between Netlify's CDN and the browser, intercepts every HTML response, and
-// patches in the real values from Netlify's environment variables.
+// Why prepend rather than append?  Because browser executes <script> tags in
+// document order. If we inject AFTER the window.ENV block, that block runs
+// first with undefined values and caches a broken supabase client singleton.
+// By prepending we guarantee window.__SUPABASE_URL__ / window.__SUPABASE_ANON_KEY__
+// are set before any other script touches them.
 
 export default async (request, context) => {
   let response;
 
   try {
-    // context.next() passes the request to the next handler in the chain
-    // (i.e. the static file server) and returns the HTML response
     response = await context.next();
   } catch (err) {
-    // If the chain itself breaks, log it and pass through unchanged
     console.error('[inject-env] context.next() threw:', err.message);
     return new Response('Internal server error', { status: 500 });
   }
 
-  // Only transform HTML — leave images, CSS, JS, fonts untouched
   const contentType = (response.headers?.get?.('content-type') || '').toLowerCase();
   if (!contentType.includes('text/html')) {
     return response;
@@ -36,24 +32,25 @@ export default async (request, context) => {
     return response;
   }
 
-  // Guard: skip pages that don't have our placeholder (already transformed or not our page)
+  // Guard: nothing to inject
   if (!html.includes('window.__SUPABASE_URL__')) {
     return response;
   }
 
-  // Read env vars from the Netlify edge context
-  // These must be set in Site Settings → Environment Variables
-  const supabaseUrl    = (context.vars && context.vars['VITE_SUPABASE_URL'])    || '';
+  const supabaseUrl     = (context.vars && context.vars['VITE_SUPABASE_URL'])        || '';
   const supabaseAnonKey = (context.vars && context.vars['VITE_SUPABASE_ANON_KEY']) || '';
 
-  // Inject the real values just before </head>
-  // JSON.stringify ensures any special characters in the keys are safely escaped
+  // PREPEND: inject as the very first child of <head>, before any other
+  // <script> or <link> tags.  This ensures the env vars are visible to every
+  // subsequent script, including the window.ENV block and ES module imports.
   const injected = html.replace(
-    '</head>',
-    `<script>
+    '<head>',
+    `<head>
+<script>
+  // Injected by Netlify Edge Function — do not edit manually
   window.__SUPABASE_URL__     = ${JSON.stringify(supabaseUrl)};
   window.__SUPABASE_ANON_KEY__ = ${JSON.stringify(supabaseAnonKey)};
-</script></head>`
+</script>`
   );
 
   return new Response(injected, {
