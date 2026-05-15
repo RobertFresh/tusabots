@@ -11,12 +11,11 @@
 //
 // Usage: node scripts/inject-build-vars.js
 
-import { readFileSync, writeFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+const { readFileSync, writeFileSync } = require('fs');
+const { resolve } = require('path');
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = resolve(__dirname, '..');
+// __dirname is available in CommonJS (Node.js)
+const rootDir = resolve(__dirname);
 
 // Load .env if present
 const envPath = resolve(rootDir, '.env');
