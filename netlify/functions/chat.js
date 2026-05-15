@@ -93,7 +93,7 @@ exports.handler = async (event) => {
   if (!process.env.ANTHROPIC_API_KEY) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Claude API key not configured. Set ANTHROPIC_API_KEY in Netlify environment variables.' })
+      body: JSON.stringify({ error: 'Claude API key not configured. Set it in Netlify environment variables.' })
     };
   }
 
