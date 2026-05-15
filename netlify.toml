@@ -1,5 +1,5 @@
 [build]
-command = "npm install"
+command = "npm install && node scripts/inject-build-vars.js"
 publish = "."
 
 [build.environment]
@@ -9,7 +9,3 @@ NODE_VERSION = "22"
 from = "/chat"
 to = "/dashboard.html"
 status = 200
-
-[[edge_functions]]
-path = "/*"
-function = "inject-env"
