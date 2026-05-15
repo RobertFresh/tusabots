@@ -59,14 +59,31 @@ nav {
   text-decoration: none;
 }
 
-.nav-back {
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-user-email {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.nav-back, .nav-signout {
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.9rem;
+  cursor: pointer;
   transition: color var(--transition);
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0;
 }
 
-.nav-back:hover { color: var(--accent-cyan); }
+.nav-back:hover, .nav-signout:hover { color: var(--accent-cyan); }
 
 /* Dashboard Content */
 .dashboard {
@@ -198,6 +215,7 @@ nav {
 
 .chat-send-btn:hover { transform: translateY(-2px); box-shadow: var(--glow-cyan); }
 .chat-send-btn:active { transform: translateY(0); }
+.chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 /* Footer */
 footer {
@@ -219,8 +237,8 @@ footer {
 
 <nav>
   <a href="index.html" class="nav-logo">🤖 TusaBots</a>
-  <div style="display:flex;align-items:center;gap:1rem">
-    <a href="index.html" class="nav-back">← Home</a>
+  <div class="nav-right" id="nav-right">
+    <!-- Populated by JS: email + sign-out button when logged in -->
   </div>
 </nav>
 
@@ -246,6 +264,78 @@ footer {
 <footer>
   <p>TusaBots © 2026</p>
 </footer>
+
+<script>
+// Inject Supabase env vars into window.ENV so lib/ modules can read them
+// without needing a build step or import.meta.env (not available in plain HTML).
+// Values come from Netlify environment variables set in the dashboard.
+window.ENV = {
+  VITE_SUPABASE_URL: window.__SUPABASE_URL__,
+  VITE_SUPABASE_ANON_KEY: window.__SUPABASE_ANON_KEY__,
+};
+</script>
+<script type="module">
+import {
+  requireAuth,
+  authFetch,
+  onAuthStateChange,
+  getSession,
+  signOut,
+  signIn,
+  signUp,
+  handlePostLoginRedirect,
+} from '/lib/auth.js';
+
+// ── Phase 2: Enforce auth gate ───────────────────────────────────────────────
+// requireAuth redirects to index.html with ?next=<current-url> if no session.
+// This is synchronous enough to block dashboard render for unauthenticated users.
+(async () => {
+  const session = await requireAuth('/index.html', window.location.href);
+  if (!session) return; // Redirected
+
+  // Auth passed — populate window state
+  window.__TUSABOTS_SESSION__ = session;
+  window.__TUSABOTS_USER__ = session.user;
+  updateNav(session.user?.email);
+
+  console.log('[TusaBots] Auth gate passed —', session.user?.email);
+})();
+
+// ── Auth state listener: redirect on sign-out or token expiry ───────────────
+onAuthStateChange((event, session) => {
+  window.__TUSABOTS_SESSION__ = session;
+  window.__TUSABOTS_USER__ = session?.user ?? null;
+  updateNav(session?.user?.email);
+
+  if (!session) {
+    console.log('[TusaBots] Session ended — redirecting to login.');
+    window.location.href = '/index.html';
+  }
+});
+
+// ── Auth-fetch helper (attaches Bearer token when session exists) ───────────
+window.authFetch = authFetch;
+
+// ── Expose helpers to classic script block ─────────────────────────────────
+window.getCurrentUser = () => window.__TUSABOTS_USER__;
+window.isLoggedIn     = () => window.__TUSABOTS_SESSION__ !== null;
+
+// ── Navigation bar state ────────────────────────────────────────────────────
+function updateNav(email) {
+  const navRight = document.getElementById('nav-right');
+  if (email) {
+    navRight.innerHTML =
+      `<span class="nav-user-email">${email}</span>` +
+      `<button class="nav-signout" id="nav-signout-btn">Sign out</button>`;
+    document.getElementById('nav-signout-btn').addEventListener('click', async () => {
+      await signOut();
+      window.location.href = '/index.html';
+    });
+  } else {
+    navRight.innerHTML = '';
+  }
+}
+</script>
 
 <script>
 const messagesEl = document.getElementById('chat-messages');
@@ -274,11 +364,17 @@ async function sendMessage() {
   sendBtn.textContent = '...';
 
   try {
-    const res = await fetch('/.netlify/functions/chat', {
+    const res = await authFetch('/.netlify/functions/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text, history: chatHistory })
     });
+
+    if (res.status === 401) {
+      addBubble('Session expired. Please sign in again.', 'bot');
+      window.location.href = '/index.html';
+      return;
+    }
+
     const data = await res.json();
     if (data.reply) {
       addBubble(data.reply, 'bot');
@@ -299,10 +395,6 @@ async function sendMessage() {
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendMessage();
 });
-
-// Auth guard — placeholder (no auth system active yet)
-// if (!user) window.location.href = '/';
-
 </script>
 
 </body>
