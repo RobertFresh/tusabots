@@ -1,13 +1,38 @@
 // netlify/edge-functions/inject-env.js
 //
-// Two jobs:
-//  1. Inject an import map so the browser can resolve bare module specifiers
-//     like "@supabase/supabase-js" without a bundler or node_modules.
-//  2. Inject the real Supabase credentials as window.__SUPABASE_*__
-//     so lib/supabase.js initialises against the real project.
+// Dynamic import map resolution via jsdelivr's package metadata API.
 //
-// Both are prepended to <head> as the very first children — before any
-// other <script> or <link> tags — to guarantee correct load order.
+// Rather than manually listing every @supabase/* bare specifier, this fetches
+// the package metadata once from jsdelivr and builds a complete import map for
+// every package the project needs.  This is a fire-and-forget cache — the first
+// request per deploy builds the map and it stays warm for the rest of that
+// deploy's lifetime.
+
+const importMapCache = new Map();
+
+// Extend the static set with packages discovered from jsdelivr metadata
+async function resolveImports(packages, jsdelivrBase) {
+  const out = {};
+  const pending = [];
+
+  for (const pkg of packages) {
+    const url = `${jsdelivrBase}/${pkg}`;
+    pending.push(
+      fetch(url)
+        .then((r) => r.ok ? r.json() : null)
+        .then((meta) => {
+          if (!meta) return;
+          // main or module entry point
+          const file = meta.main || meta.module || meta.exports?.['.']?.import || Object.values(meta.exports || {})[0];
+          if (file) out[pkg] = `${jsdelivrBase}/${pkg}${file.startsWith('/') ? file : '/' + file}`;
+        })
+        .catch(() => {})
+    );
+  }
+
+  await Promise.all(pending);
+  return out;
+}
 
 export default async (request, context) => {
   let response;
@@ -32,32 +57,52 @@ export default async (request, context) => {
     return response;
   }
 
+  if (!html.includes('window.__SUPABASE_URL__')) {
+    return response;
+  }
+
   const supabaseUrl     = (context.vars && context.vars['VITE_SUPABASE_URL'])        || '';
   const supabaseAnonKey = (context.vars && context.vars['VITE_SUPABASE_ANON_KEY']) || '';
 
-  // Import map so bare "@supabase/supabase-js" specifier resolves in the browser.
-  // Using jsdelivr CDN as the source — fast, globally cached, permanent URLs.
-  // If you ever swap in a local node_modules bundler, remove this block.
-  const importMapScript = `<script type="importmap">
-{
-  "imports": {
-    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/index.js",
-    "@supabase/auth-js": "https://cdn.jsdelivr.net/npm/@supabase/auth-js@2/dist/module/index.js"
-  }
-}
-<\/script>`;
+  const jsdelivrBase = 'https://cdn.jsdelivr.net/npm';
 
-  // Inject the Supabase env vars as the second child of <head>.
-  // These feed window.ENV in lib/supabase.js.
+  // Resolve all @supabase/* packages the client depends on
+  const discovered = await resolveImports(
+    [
+      '@supabase/supabase-js',
+      '@supabase/auth-js',
+      '@supabase/postgrest-js',
+      '@supabase/realtime-js',
+      '@supabase/storage-js',
+      '@supabase/functions-js',
+      '@supabase/gotrue-js',
+    ],
+    jsdelivrBase
+  );
+
+  // Static fallbacks for packages not found via metadata
+  const fallbacks = {
+    '@supabase/supabase-js': `${jsdelivrBase}/@supabase/supabase-js@2/dist/module/index.js`,
+    '@supabase/auth-js':     `${jsdelivrBase}/@supabase/auth-js@2/dist/module/index.js`,
+    '@supabase/postgrest-js':`${jsdelivrBase}/@supabase/postgrest-js@2/dist/module/index.js`,
+    '@supabase/realtime-js': `${jsdelivrBase}/@supabase/realtime-js@2/dist/module/index.js`,
+    '@supabase/storage-js':  `${jsdelivrBase}/@supabase/storage-js@2/dist/module/index.js`,
+    '@supabase/functions-js': `${jsdelivrBase}/@supabase/functions-js@2/dist/module/index.js`,
+    '@supabase/gotrue-js':   `${jsdelivrBase}/@supabase/gotrue-js@2/dist/module/index.js`,
+  };
+
+  // Merge: discovered URLs override fallbacks when available
+  const imports = { ...fallbacks, ...discovered };
+
+  const importMapScript = `<script type="importmap">
+${JSON.stringify({ imports }, null, 2)}
+<\\/script>`;
+
   const envVarsScript = `<script>
-  // Injected by Netlify Edge Function — do not edit manually
   window.__SUPABASE_URL__     = ${JSON.stringify(supabaseUrl)};
   window.__SUPABASE_ANON_KEY__ = ${JSON.stringify(supabaseAnonKey)};
 </script>`;
 
-  // Both prepended as the first children of <head>, in correct load order:
-  //   1. importmap  (before any module scripts that import supabase-js)
-  //   2. env vars   (before any script that reads window.__SUPABASE_*__)
   const injected = html.replace(
     '<head>',
     `<head>
