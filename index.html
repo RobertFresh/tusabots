@@ -696,8 +696,9 @@ let authMode = 'signin'; // 'signin' | 'signup'
 
 // Show the modal on page load — always, unless already authenticated
 (async () => {
-  // If redirected from dashboard with ?next=, redirect after login
-  if (handlePostLoginRedirect()) return;
+  // If redirected from dashboard with ?next=, redirect only if we actually
+  // have a valid session.  Otherwise let the login form render.
+  if (await handlePostLoginRedirect()) return;
   // If already logged in, redirect straight to dashboard
   const session = await getSession();
   if (session) {

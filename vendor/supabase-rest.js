@@ -188,17 +188,23 @@ export function onAuthStateChange(callback) {
 
 /**
  * Check the URL for a ?next= param (set by requireAuth on redirect).
- * If present, navigate there after a short delay.
+ * If the user has a valid session, redirect to the ?next= destination.
+ * If there is no session, do nothing and return false — the login form
+ * will render, and the user will be redirected after successful sign-in
+ * via the form submit handler.
  * @returns {boolean} true if a redirect was triggered
  */
-export function handlePostLoginRedirect() {
+export async function handlePostLoginRedirect() {
   const params = new URLSearchParams(window.location.search);
   const next = params.get('next');
-  if (next && next.startsWith('/')) {
-    setTimeout(() => { window.location.href = next; }, 200);
-    return true;
-  }
-  return false;
+  if (!next || !next.startsWith('/')) return false;
+  // Only redirect if the user actually has a valid session.
+  // Without this check, an unauthenticated user redirected by requireAuth()
+  // on dashboard.html would loop back to dashboard immediately.
+  const { session } = await getSession();
+  if (!session) return false;
+  setTimeout(() => { window.location.href = next; }, 200);
+  return true;
 }
 
 // ─── Auth gate ───────────────────────────────────────────────────────────────
