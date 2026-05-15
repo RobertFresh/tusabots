@@ -3,26 +3,42 @@
 // Injects an import map into every HTML response so the browser can resolve
 // @supabase/* bare specifiers without a bundler.
 //
-// The import map entries are hardcoded with the correct jsdelivr CDN paths for
-// each @supabase-js v2 package.  These are derived from the package.json
-// "module" field (ESM entry point) and verified to exist on cdn.jsdelivr.net.
+// Uses esm.sh with the ?bundle flag:
+//   https://esm.sh/@supabase/supabase-js@2?bundle
+//
+// The ?bundle flag is the key: it tells esm.sh to return a SINGLE FILE that
+// rewrites ALL relative imports inside each @supabase/* package to absolute
+// esm.sh URLs.  The browser then fetches those URLs directly.  This avoids
+// the entire class of failures we hit with jsdelivr — where relative imports
+// inside a package (e.g. "./FunctionsClient") couldn't be resolved because the
+// browser tried to fetch them as top-level URLs.
+//
+// Verified working:
+//   @supabase/supabase-js  → re-exports full client API
+//   @supabase/auth-js      → AuthClient, GoTrueClient, etc.
+//   @supabase/functions-js → FunctionsClient
+//   @supabase/realtime-js → RealtimeClient
+//   @supabase/postgrest-js → PostgrestClient
+//   @supabase/storage-js  → StorageClient
 //
 // env vars injected as window.__SUPABASE_URL__ / window.__SUPABASE_ANON_KEY__
 // so lib/supabase.js initialises the real Supabase client.
 
-const jsdelivrBase = 'https://cdn.jsdelivr.net/npm';
+const SUPABASE_PACKAGES = [
+  '@supabase/supabase-js',
+  '@supabase/auth-js',
+  '@supabase/functions-js',
+  '@supabase/realtime-js',
+  '@supabase/postgrest-js',
+  '@supabase/storage-js',
+];
 
-// Maps each bare specifier to the correct ESM file on jsdelivr.
-// Sources: each package's "module" field (or "main" where module absent).
-const IMPORTS = {
-  '@supabase/supabase-js':   `${jsdelivrBase}/@supabase/supabase-js@2/dist/index.mjs`,
-  '@supabase/auth-js':       `${jsdelivrBase}/@supabase/auth-js@2/dist/module/index.js`,
-  '@supabase/postgrest-js':  `${jsdelivrBase}/@supabase/postgrest-js@2/dist/index.mjs`,
-  '@supabase/realtime-js':   `${jsdelivrBase}/@supabase/realtime-js@2/dist/module/index.js`,
-  '@supabase/storage-js':    `${jsdelivrBase}/@supabase/storage-js@2/dist/index.mjs`,
-  '@supabase/functions-js':  `${jsdelivrBase}/@supabase/functions-js@2/dist/module/index.js`,
-  '@supabase/gotrue-js':     `${jsdelivrBase}/@supabase/gotrue-js@2/dist/module/index.js`,
-};
+// Build the import map entries using esm.sh ?bundle for each package.
+// The ?bundle flag makes esm.sh return a self-contained file where all
+// internal relative imports have been rewritten to absolute esm.sh URLs.
+const IMPORTS = Object.fromEntries(
+  SUPABASE_PACKAGES.map((pkg) => [pkg, `https://esm.sh/${pkg}@2?bundle`])
+);
 
 export default async (request, context) => {
   let response;
@@ -54,7 +70,8 @@ export default async (request, context) => {
   const supabaseUrl     = (context.vars && context.vars['VITE_SUPABASE_URL'])        || '';
   const supabaseAnonKey = (context.vars && context.vars['VITE_SUPABASE_ANON_KEY']) || '';
 
-  // Build the import map JSON — </scr'+'ipt> prevents HTML-parser premature close
+  // Build the import map — </scr'+'ipt> prevents the HTML parser from
+  // prematurely closing the outer <script> tag when scanning the response body.
   const scriptOpen  = '<script type="importmap">';
   const scriptClose = '</scr' + 'ipt>';
   const importMapJson = JSON.stringify({ imports: IMPORTS }, null, 2);
@@ -66,7 +83,7 @@ export default async (request, context) => {
   window.__SUPABASE_ANON_KEY__ = ${JSON.stringify(supabaseAnonKey)};
 </script>`;
 
-  // Prepend to <head>: importmap first, then env vars, then the rest of the page
+  // Prepend to <head>: importmap first, then env vars
   const injected = html.replace(
     '<head>',
     `<head>\n${importMapScript}\n${envVarsScript}`
