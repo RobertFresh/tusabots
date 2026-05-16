@@ -1,5 +1,5 @@
 [build]
-command = "npm install && node scripts/inject-build-vars.js"
+command = "npm install"
 publish = "."
 
 [build.environment]
