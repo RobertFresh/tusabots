@@ -270,8 +270,8 @@ footer {
 // without needing a build step or import.meta.env (not available in plain HTML).
 // Values come from Netlify environment variables set in the dashboard.
 window.ENV = {
-  VITE_SUPABASE_URL: window.__SUPABASE_URL__,
-  VITE_SUPABASE_ANON_KEY: window.__SUPABASE_ANON_KEY__,
+  get VITE_SUPABASE_URL()     { return window.__SUPABASE_URL__;     },
+  get VITE_SUPABASE_ANON_KEY() { return window.__SUPABASE_ANON_KEY__; },
 };
 </script>
 <script type="module">

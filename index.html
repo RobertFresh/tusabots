@@ -684,8 +684,8 @@ footer {
 <script>
 // Inject Supabase env vars — same pattern as dashboard.html
 window.ENV = {
-  VITE_SUPABASE_URL: window.__SUPABASE_URL__,
-  VITE_SUPABASE_ANON_KEY: window.__SUPABASE_ANON_KEY__,
+  get VITE_SUPABASE_URL()     { return window.__SUPABASE_URL__;     },
+  get VITE_SUPABASE_ANON_KEY() { return window.__SUPABASE_ANON_KEY__; },
 };
 </script>
 <script type="module">
