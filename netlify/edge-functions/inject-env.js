@@ -29,6 +29,19 @@ export default async (request, context) => {
     return response;
   }
 
+  // -- Diagnostics: log all available env sources --
+  console.log('[inject-env] === ENV DIAGNOSTIC ===');
+  console.log('[inject-env] context.vars:', JSON.stringify(context.vars));
+  console.log('[inject-env] context.env:', JSON.stringify(context.env));
+  try {
+    console.log('[inject-env] Deno.env.get VITE_SUPABASE_URL:', Deno.env.get('VITE_SUPABASE_URL'));
+    console.log('[inject-env] Deno.env.get VITE_SUPABASE_ANON_KEY:', Deno.env.get('VITE_SUPABASE_ANON_KEY'));
+  } catch (e) {
+    console.log('[inject-env] Deno.env not available:', e.message);
+  }
+  console.log('[inject-env] ==========================');
+  // -- Diagnostics end --
+
   // Build the injection script.  Using '</scr'+'ipt>' prevents the HTML
   // parser from misidentifying this string as closing an outer <script> tag.
   const supabaseUrl     = (context.vars?.['VITE_SUPABASE_URL'])        || '';
