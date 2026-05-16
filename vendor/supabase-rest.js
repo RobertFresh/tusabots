@@ -14,6 +14,20 @@ const SUPABASE_ANON_KEY = window.ENV?.VITE_SUPABASE_ANON_KEY || '';
 // ─── Internal fetch wrapper ─────────────────────────────────────────────────
 
 async function supabaseFetch(path, options = {}) {
+  if (!SUPABASE_URL) {
+    throw new Error(
+      '[Supabase] VITE_SUPABASE_URL is not set. ' +
+      'Set VITE_SUPABASE_URL in Netlify → Site Settings → Environment Variables ' +
+      '(Build-time scope), then trigger a new deploy.'
+    );
+  }
+  if (!SUPABASE_ANON_KEY) {
+    throw new Error(
+      '[Supabase] VITE_SUPABASE_ANON_KEY is not set. ' +
+      'Set VITE_SUPABASE_ANON_KEY in Netlify → Site Settings → Environment Variables ' +
+      '(Build-time scope), then trigger a new deploy.'
+    );
+  }
   const url = `${SUPABASE_URL}${path}`;
   const res = await fetch(url, {
     ...options,
