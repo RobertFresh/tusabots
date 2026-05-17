@@ -132,7 +132,7 @@ exports.handler = async (event) => {
   if (authResult.user === null) {
     return { statusCode: authResult.statusCode, body: authResult.body };
   }
-  const userId = authResult.user.id; // Derived from validated JWT — never from client body
+  const userId = authResult.user.sub || authResult.user.id; // Derived from validated JWT — never from client body
   console.log('[chat] userId:', userId);
 
   // Step 2: Validate required env vars
