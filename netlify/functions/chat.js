@@ -15,15 +15,25 @@ const SYSTEM_PROMPT = "You are TusaBot, James's personal AI assistant. Be helpfu
  */
 async function validateAuth(event) {
   const authHeader = event.headers['authorization'] || event.headers['Authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const bearerPresent = authHeader?.startsWith('Bearer ');
+  const token = bearerPresent ? authHeader.slice(7) : null;
+  console.log('[auth] auth header present:', !!authHeader);
+  if (!authHeader || !bearerPresent) {
+    console.error('[auth] missing or malformed Authorization header');
     return {
       user: null,
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized. No token provided.' })
+      body: JSON.stringify({
+        error: 'Unauthorized. No token provided.',
+        authHeaderPresent: !!authHeader,
+        bearerPrefixPresent: !!bearerPresent,
+        tokenPrefix: token?.slice(0, 10) ?? null,
+        supabaseError: null,
+      })
     };
   }
 
-  const token = authHeader.slice(7); // strip "Bearer "
+  console.log('[auth] token prefix:', token?.slice(0, 20));
 
   // Read-only client with the anon key — we only use it to verify the JWT
   if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_ANON_KEY) {
@@ -31,7 +41,13 @@ async function validateAuth(event) {
     return {
       user: null,
       statusCode: 503,
-      body: JSON.stringify({ error: 'Server misconfiguration. Supabase env vars not set.' })
+      body: JSON.stringify({
+        error: 'Server misconfiguration. Supabase env vars not set.',
+        authHeaderPresent: !!authHeader,
+        bearerPrefixPresent: !!bearerPresent,
+        tokenPrefix: token?.slice(0, 10) ?? null,
+        supabaseError: null,
+      })
     };
   }
 
@@ -41,12 +57,18 @@ async function validateAuth(event) {
   );
 
   const { data: user, error } = await supabase.auth.getUser(token);
-
   if (error || !user) {
+    console.error('[auth] getUser failed:', error?.message);
     return {
       user: null,
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized. Invalid or expired token.' })
+      body: JSON.stringify({
+        error: 'Unauthorized. Invalid or expired token.',
+        authHeaderPresent: !!authHeader,
+        bearerPrefixPresent: !!bearerPresent,
+        tokenPrefix: token?.slice(0, 10) ?? null,
+        supabaseError: error?.message ?? null,
+      })
     };
   }
 
@@ -59,19 +81,31 @@ const supabaseAdmin = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
   : null;
 
+if (!supabaseAdmin) {
+  console.error('[FATAL] supabaseAdmin not initialised. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+}
+
 async function getMemory(userId, limit = 20) {
-  if (!supabaseAdmin) return [];
+  if (!supabaseAdmin) {
+    console.error('[memory] getMemory skipped — supabaseAdmin null');
+    return [];
+  }
   const { data } = await supabaseAdmin
     .from('messages')
     .select('role, content')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit);
+  console.log('[memory/read]', userId, data?.length);
   return (data || []).reverse();
 }
 
 async function saveMessage(userId, role, content) {
-  if (!supabaseAdmin) return;
+  if (!supabaseAdmin) {
+    console.error('[memory] saveMessage skipped — supabaseAdmin null');
+    return;
+  }
+  console.log('[memory/write]', userId, content);
   await supabaseAdmin.from('messages').insert({ user_id: userId, role, content });
 }
 
@@ -82,12 +116,21 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method not allowed' };
   }
 
+  // ── Runtime env validation (observational only) ──
+  console.log('[env] SUPABASE_URL present:', !!process.env.SUPABASE_URL);
+  console.log('[env] SUPABASE_SERVICE_ROLE_KEY present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+  console.log('[env] VITE_SUPABASE_URL present:', !!process.env.VITE_SUPABASE_URL);
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[FATAL ENV] Missing Supabase admin credentials — memory/storage WILL FAIL');
+  }
+
   // Step 1: Authenticate — reject if token is missing or invalid
   const authResult = await validateAuth(event);
   if (authResult.user === null) {
     return { statusCode: authResult.statusCode, body: authResult.body };
   }
   const userId = authResult.user.id; // Derived from validated JWT — never from client body
+  console.log('[chat] userId:', userId);
 
   // Step 2: Validate required env vars
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -139,8 +182,8 @@ exports.handler = async (event) => {
   const reply = data.content[0].text;
 
   // Step 6: Save memory (fire-and-forget — don't block the response)
-  saveMessage(userId, 'user', message).catch(() => {});
-  saveMessage(userId, 'assistant', reply).catch(() => {});
+  saveMessage(userId, 'user', message).catch(err => console.error('[chat/saveMessage FAILED]', err));
+  saveMessage(userId, 'assistant', reply).catch(err => console.error('[chat/saveMessage FAILED]', err));
 
   return {
     statusCode: 200,
