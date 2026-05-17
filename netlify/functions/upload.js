@@ -114,13 +114,13 @@ exports.handler = async (event) => {
 
   const { data: urlData } = supabaseAdmin.storage.from('tusabot-files').getPublicUrl(path);
 
-  // Step 4: Record file metadata
-  await supabaseAdmin.from('files').insert({
+  // Step 4: Record file metadata (fire-and-forget — log errors, don't block response)
+  supabaseAdmin.from('files').insert({
     user_id: userId,
     file_name: fileName,
     file_type: fileType,
     storage_path: urlData.publicUrl
-  });
+  }).catch(err => console.error('[upload/saveMeta FAILED]', err));
 
   return {
     statusCode: 200,
