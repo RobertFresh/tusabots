@@ -11,7 +11,13 @@ async function validateAuth(event) {
     return {
       user: null,
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized. No token provided.' })
+      body: JSON.stringify({
+        error: 'Unauthorized. No token provided.',
+        authHeaderPresent: !!authHeader,
+        bearerPrefixPresent: authHeader?.startsWith('Bearer ') ?? false,
+        tokenPrefix: null,
+        supabaseError: null,
+      })
     };
   }
 
@@ -21,7 +27,13 @@ async function validateAuth(event) {
     return {
       user: null,
       statusCode: 503,
-      body: JSON.stringify({ error: 'Server misconfiguration. Supabase env vars not set.' })
+      body: JSON.stringify({
+        error: 'Server misconfiguration. Supabase env vars not set.',
+        authHeaderPresent: !!authHeader,
+        bearerPrefixPresent: true,
+        tokenPrefix: authHeader.slice(7)?.slice(0, 10) ?? null,
+        supabaseError: null,
+      })
     };
   }
 
@@ -36,7 +48,13 @@ async function validateAuth(event) {
     return {
       user: null,
       statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized. Invalid or expired token.' })
+      body: JSON.stringify({
+        error: 'Unauthorized. Invalid or expired token.',
+        authHeaderPresent: !!authHeader,
+        bearerPrefixPresent: true,
+        tokenPrefix: authHeader.slice(7)?.slice(0, 10) ?? null,
+        supabaseError: error?.message ?? null,
+      })
     };
   }
 
