@@ -1,7 +1,7 @@
 // netlify/functions/upload.js
 // TusaBot file upload handler — validates session, writes to Supabase Storage
 const { createClient } = require('@supabase/supabase-js');
-const { validateAuth, getUserId } = require('../lib/auth-validate.js');
+const { validateAuth, getUserId } = require('./auth-validate.js');
 
 // ─── Storage client (service role for file operations) ─────────────────────
 

@@ -1,6 +1,6 @@
 // TusaBot chat function — Supabase auth, memory, Anthropic Claude
 const { createClient } = require('@supabase/supabase-js');
-const { validateAuth, getUserId } = require('../lib/auth-validate.js');
+const { validateAuth, getUserId } = require('./auth-validate.js');
 
 const SYSTEM_PROMPT = "You are TusaBot, James's personal AI assistant. Be helpful, concise, and friendly.";
 
