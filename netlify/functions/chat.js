@@ -1,82 +1,8 @@
 // TusaBot chat function — Supabase auth, memory, Anthropic Claude
 const { createClient } = require('@supabase/supabase-js');
+const { validateAuth, getUserId } = require('./auth-validate.js');
 
 const SYSTEM_PROMPT = "You are TusaBot, James's personal AI assistant. Be helpful, concise, and friendly.";
-
-// ─── Auth: validate JWT, derive userId server-side ──────────────────────────
-
-/**
- * Validates the Authorization: Bearer <token> header.
- * Returns the Supabase user object from the validated JWT.
- * Returns null and a 401 response if missing, invalid, or expired.
- *
- * @param {object} event - Netlify function event
- * @returns {Promise<{user: object|null, statusCode: number, body: string}>}
- */
-async function validateAuth(event) {
-  const authHeader = event.headers['authorization'] || event.headers['Authorization'];
-  const bearerPresent = authHeader?.startsWith('Bearer ');
-  const token = bearerPresent ? authHeader.slice(7) : null;
-  console.log('[auth] auth header present:', !!authHeader);
-  if (!authHeader || !bearerPresent) {
-    console.error('[auth] missing or malformed Authorization header');
-    return {
-      user: null,
-      statusCode: 401,
-      body: JSON.stringify({
-        error: 'Unauthorized. No token provided.',
-        authHeaderPresent: !!authHeader,
-        bearerPrefixPresent: !!bearerPresent,
-        tokenPrefix: token?.slice(0, 10) ?? null,
-        supabaseError: null,
-      })
-    };
-  }
-
-  console.log('[auth] token prefix:', token?.slice(0, 20));
-
-  // Read-only client with the anon key — we only use it to verify the JWT
-  if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_ANON_KEY) {
-    // If env vars are missing, return a config error rather than a hard 500
-    return {
-      user: null,
-      statusCode: 503,
-      body: JSON.stringify({
-        error: 'Server misconfiguration. Supabase env vars not set.',
-        authHeaderPresent: !!authHeader,
-        bearerPrefixPresent: !!bearerPresent,
-        tokenPrefix: token?.slice(0, 10) ?? null,
-        supabaseError: null,
-      })
-    };
-  }
-
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL,
-    process.env.VITE_SUPABASE_ANON_KEY
-  );
-
-  const { data: user, error } = await supabase.auth.getUser(token);
-  if (error || !user) {
-    console.error('[auth] getUser failed:', error?.message);
-    return {
-      user: null,
-      statusCode: 401,
-      body: JSON.stringify({
-        error: 'Unauthorized. Invalid or expired token.',
-        authHeaderPresent: !!authHeader,
-        bearerPrefixPresent: !!bearerPresent,
-        tokenPrefix: token?.slice(0, 10) ?? null,
-        supabaseError: error?.message ?? null,
-      })
-    };
-  }
-
-  console.log('[auth] user object keys:', Object.keys(user || {}));
-  console.log('[auth] user.sub:', user?.sub);
-  console.log('[auth] user.id:', user?.id);
-  return { user, statusCode: null, body: null };
-}
 
 // ─── Supabase memory layer (server-side only) ───────────────────────────────
 
@@ -132,7 +58,7 @@ exports.handler = async (event) => {
   if (authResult.user === null) {
     return { statusCode: authResult.statusCode, body: authResult.body };
   }
-  const userId = authResult.user.sub || authResult.user.id; // Derived from validated JWT — never from client body
+  const userId = getUserId(authResult.user) || authResult.user.user?.id || authResult.user.user?.sub;
   console.log('[chat] userId:', userId);
 
   // Step 2: Validate required env vars

@@ -1,47 +1,7 @@
 // netlify/functions/upload.js
 // TusaBot file upload handler — validates session, writes to Supabase Storage
-
 const { createClient } = require('@supabase/supabase-js');
-
-// ─── Auth: validate JWT, derive userId server-side ──────────────────────────
-
-async function validateAuth(event) {
-  const authHeader = event.headers['authorization'] || event.headers['Authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return {
-      user: null,
-      statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized. No token provided.' })
-    };
-  }
-
-  const token = authHeader.slice(7);
-
-  if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_ANON_KEY) {
-    return {
-      user: null,
-      statusCode: 503,
-      body: JSON.stringify({ error: 'Server misconfiguration. Supabase env vars not set.' })
-    };
-  }
-
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL,
-    process.env.VITE_SUPABASE_ANON_KEY
-  );
-
-  const { data: user, error } = await supabase.auth.getUser(token);
-
-  if (error || !user) {
-    return {
-      user: null,
-      statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized. Invalid or expired token.' })
-    };
-  }
-
-  return { user, statusCode: null, body: null };
-}
+const { validateAuth, getUserId } = require('./auth-validate.js');
 
 // ─── Storage client (service role for file operations) ─────────────────────
 
@@ -56,14 +16,12 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method not allowed' };
   }
 
-  // Step 1: Authenticate
   const authResult = await validateAuth(event);
   if (authResult.user === null) {
     return { statusCode: authResult.statusCode, body: authResult.body };
   }
-  const userId = authResult.user.id; // Server-derived from validated JWT
+  const userId = getUserId(authResult.user) || authResult.user.user?.id || authResult.user.user?.sub;
 
-  // Step 2: Parse request — userId from body is ignored
   let fileName, fileType, base64Data;
   try {
     const body = JSON.parse(event.body);
@@ -82,7 +40,6 @@ exports.handler = async (event) => {
     return { statusCode: 503, body: JSON.stringify({ error: 'Storage not configured.' }) };
   }
 
-  // Step 3: Upload to Supabase Storage scoped to this user
   const buffer = Buffer.from(base64Data, 'base64');
   const path = `${userId}/${Date.now()}-${fileName}`;
 
@@ -96,13 +53,13 @@ exports.handler = async (event) => {
 
   const { data: urlData } = supabaseAdmin.storage.from('tusabot-files').getPublicUrl(path);
 
-  // Step 4: Record file metadata
-  await supabaseAdmin.from('files').insert({
+  // Record file metadata (fire-and-forget — log errors, don't block response)
+  supabaseAdmin.from('files').insert({
     user_id: userId,
     file_name: fileName,
     file_type: fileType,
     storage_path: urlData.publicUrl
-  });
+  }).catch(err => console.error('[upload/saveMeta FAILED]', err));
 
   return {
     statusCode: 200,
