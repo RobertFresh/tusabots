@@ -54,8 +54,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);b
 .chat-send-btn:disabled{opacity:0.4;cursor:not-allowed}
 .robot-stage{width:100%;display:flex;justify-content:center;padding:0 20px}
 .robot-wrapper{position:relative;user-select:none}
-.robot-wrapper.idle{animation:robotFloat 4s ease-in-out infinite}
+.robot-jump{animation:robotJump 0.5s ease-in-out}
+.robot-spinning{animation:none;transition:transform 0.05s linear}
+.chat-panel{margin-top:20px;width:100%;background:rgba(12,18,28,0.75);border:1px solid rgba(57,217,138,0.15);border-radius:18px;backdrop-filter:blur(20px);overflow:hidden}
+.robot-wrapper.idle{animation:robotFloat 4s ease-in-out infinite;cursor:pointer}
+.robot-wrapper.idle:active{animation-play-state:paused}
 @keyframes robotFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes robotJump{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
 .robot-svg{width:200px;height:280px;filter:drop-shadow(0 8px 30px rgba(57,217,138,0.25))}
 .robot-eye{animation:eyeBlink 4s ease-in-out infinite;transform-origin:center}
 @keyframes eyeBlink{0%,42%,58%,100%{transform:scaleY(1)}50%{transform:scaleY(0.1)}}
@@ -280,7 +285,7 @@ footer{position:relative;z-index:1;text-align:center;padding:2.5rem 2rem;color:#
       </div>
     </div>
     <div class="robot-stage">
-      <div class="robot-wrapper idle">
+      <div class="robot-wrapper idle" id="robot-wrapper">
         <svg class="robot-svg" viewBox="0 0 180 260" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="hg" x1="45" y1="30" x2="135" y2="95">
@@ -320,6 +325,21 @@ footer{position:relative;z-index:1;text-align:center;padding:2.5rem 2rem;color:#
           <ellipse cx="64" cy="240" rx="18" ry="8" fill="url(#bg)" stroke="#39d98a" stroke-width="1" stroke-opacity="0.3"/>
           <ellipse cx="116" cy="240" rx="18" ry="8" fill="url(#bg)" stroke="#39d98a" stroke-width="1" stroke-opacity="0.3"/>
         </svg>
+      </div>
+      <!-- NEW: Chat panel under robot (ADD-ONLY layer) -->
+      <div class="chat-panel" id="chat-panel">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(57,217,138,0.07);border-bottom:1px solid rgba(57,217,138,0.15)">
+          <span style="width:8px;height:8px;border-radius:50%;background:#39d98a;box-shadow:0 0 6px #39d98a;flex-shrink:0"></span>
+          <span style="font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#39d98a">TusaBot</span>
+          <span style="margin-left:auto;font-size:0.7rem;color:#3d5a47">OFFLINE</span>
+        </div>
+        <div id="panel-msgs" style="padding:14px;display:flex;flex-direction:column;gap:10px;min-height:130px;max-height:190px;overflow-y:auto"></div>
+        <div style="display:flex;gap:8px;padding:10px 12px;border-top:1px solid rgba(57,217,138,0.1)">
+          <input id="panel-input" type="text" placeholder="Say something..." autocomplete="off" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(57,217,138,0.12);border-radius:12px;padding:9px 13px;color:#e8f4f0;font-size:0.88rem;font-family:inherit;outline:none">
+          <button id="panel-send" type="button" style="width:38px;height:38px;border-radius:12px;background:#39d98a;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#080b0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -452,6 +472,145 @@ window.handleAuthSubmit = async function (e) {
     setLoading(false);
   }
 };
+</script>
+
+<!-- NEW: Robot interactions + panel chat (ADD-ONLY layer) -->
+<script>
+(function(){
+  var robot = document.getElementById('robot-wrapper');
+  var panelMsgs = document.getElementById('panel-msgs');
+  var panelInput = document.getElementById('panel-input');
+  var panelSend = document.getElementById('panel-send');
+  var EXACT_MSG = 'welcome to Tusabots, we are currently under maintenance, more bots coming soon';
+
+  // Bot message helper
+  function addBot(text) {
+    var d = document.createElement('div');
+    d.style.cssText = 'display:flex;gap:6px;align-items:flex-end;animation:msgFadeIn 0.3s ease forwards;opacity:0';
+    d.innerHTML = '<div style="width:22px;height:22px;border-radius:50%;background:rgba(57,217,138,0.15);border:1px solid rgba(57,217,138,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">&#x1F916;</div><div style="max-width:80%;padding:8px 12px;border-radius:12px;font-size:0.8rem;line-height:1.45;background:rgba(57,217,138,0.1);border:1px solid rgba(57,217,138,0.18);border-bottom-left-radius:3px;color:#c8f0dc">' + text + '</div>';
+    d.style.opacity = '1';
+    panelMsgs.appendChild(d);
+    panelMsgs.scrollTop = panelMsgs.scrollHeight;
+  }
+
+  // Pre-load welcome message
+  addBot(EXACT_MSG);
+
+  // Typing indicator helper
+  function addTyping() {
+    var t = document.createElement('div');
+    t.id = 'panel-typing';
+    t.style.cssText = 'display:flex;gap:6px;align-items:center;animation:msgFadeIn 0.3s ease forwards;opacity:0';
+    t.innerHTML = '<div style="width:22px;height:22px;border-radius:50%;background:rgba(57,217,138,0.15);border:1px solid rgba(57,217,138,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">&#x1F916;</div><div style="display:flex;gap:3px;padding:8px 12px;background:rgba(57,217,138,0.08);border:1px solid rgba(57,217,138,0.15);border-radius:12px;border-bottom-left-radius:3px"><span style="width:5px;height:5px;border-radius:50%;background:#39d98a;opacity:0.5;animation:dotBounce 1.2s ease-in-out infinite"></span><span style="width:5px;height:5px;border-radius:50%;background:#39d98a;opacity:0.5;animation:dotBounce 1.2s ease-in-out infinite;animation-delay:0.15s"></span><span style="width:5px;height:5px;border-radius:50%;background:#39d98a;opacity:0.5;animation:dotBounce 1.2s ease-in-out infinite;animation-delay:0.3s"></span></div>';
+    t.style.opacity = '1';
+    panelMsgs.appendChild(t);
+    panelMsgs.scrollTop = panelMsgs.scrollHeight;
+  }
+  function removeTyping() {
+    var t = document.getElementById('panel-typing');
+    if (t) t.remove();
+  }
+
+  // Send message
+  function send() {
+    var v = panelInput.value.trim();
+    if (!v) return;
+    // User message
+    var u = document.createElement('div');
+    u.style.cssText = 'display:flex;gap:6px;align-items:flex-end;flex-direction:row-reverse;animation:msgFadeIn 0.3s ease forwards;opacity:0';
+    u.innerHTML = '<div style="width:22px;height:22px;border-radius:50%;background:rgba(57,217,138,0.15);border:1px solid rgba(57,217,138,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0">&#x1F916;</div><div style="max-width:80%;padding:8px 12px;border-radius:12px;font-size:0.8rem;line-height:1.45;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-bottom-right-radius:3px;color:#8b949e">' + v + '</div>';
+    u.style.opacity = '1';
+    panelMsgs.appendChild(u);
+    panelInput.value = '';
+    panelMsgs.scrollTop = panelMsgs.scrollHeight;
+    addTyping();
+    setTimeout(function() { removeTyping(); addBot(EXACT_MSG); }, 800);
+  }
+  panelSend.addEventListener('click', send);
+  panelInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') send(); });
+
+  // Robot interaction state
+  var holdTimer = null;
+  var startX = 0;
+  var totalRotation = 0;
+  var spinning = false;
+  var spinRaf = null;
+  var jumpActive = false;
+  var currentX = 0;
+
+  // Jump
+  function doJump() {
+    if (jumpActive) return;
+    jumpActive = true;
+    robot.classList.remove('idle');
+    robot.style.animation = 'none';
+    robot.style.transform = 'translateY(0)';
+    var start = null;
+    var dur = 500;
+    function step(ts) {
+      if (!start) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var y = Math.sin(p * Math.PI) * -24;
+      robot.style.transform = 'translateY(' + y + 'px)';
+      if (p < 1) { requestAnimationFrame(step); }
+      else { robot.style.transform = ''; jumpActive = false; }
+    }
+    requestAnimationFrame(step);
+  }
+
+  // Spin
+  function startSpin(clientX) {
+    startX = clientX;
+    currentX = clientX;
+    totalRotation = 0;
+    spinning = true;
+    robot.classList.remove('idle');
+    robot.style.animation = 'none';
+    robot.style.transition = '';
+    function spin() {
+      if (!spinning) return;
+      var dx = currentX - startX;
+      totalRotation += dx * 0.3;
+      startX = currentX;
+      robot.style.transform = 'rotate(' + totalRotation + 'deg)';
+      spinRaf = requestAnimationFrame(spin);
+    }
+    spinRaf = requestAnimationFrame(spin);
+  }
+  function stopSpin() {
+    spinning = false;
+    if (spinRaf) cancelAnimationFrame(spinRaf);
+    robot.style.transform = '';
+    robot.style.transition = '';
+    robot.classList.add('idle');
+  }
+
+  // Mouse: click = jump, hold > 200ms = spin
+  robot.addEventListener('mousedown', function(e) {
+    if (jumpActive) { clearTimeout(holdTimer); return; }
+    holdTimer = setTimeout(function() { startSpin(e.clientX); }, 200);
+  });
+  robot.addEventListener('mouseup', function(e) {
+    clearTimeout(holdTimer);
+    if (spinning) { stopSpin(); }
+    else { doJump(); }
+  });
+  robot.addEventListener('mousemove', function(e) {
+    if (spinning) { e.preventDefault(); currentX = e.clientX; }
+  });
+  // Touch support
+  robot.addEventListener('touchstart', function(e) {
+    holdTimer = setTimeout(function() { startSpin(e.touches[0].clientX); }, 200);
+  }, { passive: true });
+  robot.addEventListener('touchend', function(e) {
+    clearTimeout(holdTimer);
+    if (spinning) { stopSpin(); }
+    else { doJump(); }
+  });
+  robot.addEventListener('touchmove', function(e) {
+    if (spinning) { e.preventDefault(); currentX = e.touches[0].clientX; }
+  }, { passive: false });
+})();
 </script>
 
 </body></html>
