@@ -72,9 +72,6 @@ async function validateAuth(event) {
     };
   }
 
-  console.log('[auth] user object keys:', Object.keys(user || {}));
-  console.log('[auth] user.sub:', user?.sub);
-  console.log('[auth] user.id:', user?.id);
   return { user, statusCode: null, body: null };
 }
 
