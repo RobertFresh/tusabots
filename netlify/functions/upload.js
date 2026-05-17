@@ -61,7 +61,7 @@ exports.handler = async (event) => {
   if (authResult.user === null) {
     return { statusCode: authResult.statusCode, body: authResult.body };
   }
-  const userId = authResult.user.id; // Server-derived from validated JWT
+  const userId = authResult.user.user?.id || authResult.user.user?.sub; // Server-derived from validated JWT
 
   // Step 2: Parse request — userId from body is ignored
   let fileName, fileType, base64Data;
