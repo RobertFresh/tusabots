@@ -1,42 +1,8 @@
 // TusaBot chat function — Supabase auth, memory, Anthropic Claude
-const { createClient } = require('@supabase/supabase-js');
+// Updated to use modular orchestrator layer.
 const { validateAuth, getUserId } = require('./auth-validate.js');
-
-const SYSTEM_PROMPT = "You are TusaBot, James's personal AI assistant. Be helpful, concise, and friendly.";
-
-// ─── Supabase memory layer (server-side only) ───────────────────────────────
-
-const supabaseAdmin = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-  : null;
-
-if (!supabaseAdmin) {
-  console.error('[FATAL] supabaseAdmin not initialised. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
-}
-
-async function getMemory(userId, limit = 20) {
-  if (!supabaseAdmin) {
-    console.error('[memory] getMemory skipped — supabaseAdmin null');
-    return [];
-  }
-  const { data } = await supabaseAdmin
-    .from('messages')
-    .select('role, content')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  console.log('[memory/read]', userId, data?.length);
-  return (data || []).reverse();
-}
-
-async function saveMessage(userId, role, content) {
-  if (!supabaseAdmin) {
-    console.error('[memory] saveMessage skipped — supabaseAdmin null');
-    return;
-  }
-  console.log('[memory/write]', userId, content);
-  await supabaseAdmin.from('messages').insert({ user_id: userId, role, content });
-}
+const { buildContext } = require('../../orchestrator/buildContext');
+const { saveMessage } = require('../../memory/retrieveMemory');
 
 // ─── Main handler ───────────────────────────────────────────────────────────
 
@@ -48,7 +14,6 @@ exports.handler = async (event) => {
   // ── Runtime env validation (observational only) ──
   console.log('[env] SUPABASE_URL present:', !!process.env.SUPABASE_URL);
   console.log('[env] SUPABASE_SERVICE_ROLE_KEY present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-  console.log('[env] VITE_SUPABASE_URL present:', !!process.env.VITE_SUPABASE_URL);
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[FATAL ENV] Missing Supabase admin credentials — memory/storage WILL FAIL');
   }
@@ -69,7 +34,7 @@ exports.handler = async (event) => {
     };
   }
 
-  // Step 3: Parse request — userId from body is now ignored; identity is server-derived
+  // Step 3: Parse request
   let message;
   let history = [];
   try {
@@ -82,9 +47,8 @@ exports.handler = async (event) => {
 
   if (!message) return { statusCode: 400, body: JSON.stringify({ error: 'No message provided.' }) };
 
-  // Step 4: Load memory for this user
-  const prior = await getMemory(userId);
-  prior.push({ role: 'user', content: message });
+  // Step 4: Build context (system prompt + memory + history + current message)
+  const { system, messages } = await buildContext({ userId, currentMessage: message, conversationHistory: history });
 
   // Step 5: Call Claude
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -97,8 +61,8 @@ exports.handler = async (event) => {
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: prior
+      system,
+      messages
     })
   });
 
