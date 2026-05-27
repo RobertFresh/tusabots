@@ -85,17 +85,138 @@ nav {
 
 .nav-back:hover, .nav-signout:hover { color: var(--accent-cyan); }
 
-/* Dashboard layout */
+/* Dashboard Content */
 .dashboard {
   flex: 1;
-  max-width: 860px;
+  max-width: 800px;
   width: 100%;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 3rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 2rem;
 }
+
+.dashboard-header {
+  text-align: center;
+}
+
+.dashboard-header h1 {
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.4rem;
+}
+
+.dashboard-header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Chat Area */
+.chat-container {
+  flex: 1;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chat-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+.chat-placeholder span {
+  background: rgba(0, 212, 255, 0.06);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  border-radius: 12px;
+  padding: 1rem 2rem;
+}
+
+.chat-bubble {
+  max-width: 75%;
+  padding: 0.75rem 1.1rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.chat-bubble.bot {
+  align-self: flex-start;
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.chat-bubble.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  color: #fff;
+}
+
+/* Input */
+.chat-input-area {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+.chat-input {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.chat-input::placeholder { color: var(--text-muted); }
+.chat-input:focus { border-color: var(--accent-cyan); box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1); }
+
+.chat-send-btn {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.4rem;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.chat-send-btn:hover { transform: translateY(-2px); box-shadow: var(--glow-cyan); }
+.chat-send-btn:active { transform: translateY(0); }
+.chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
 
 /* Workspace bar */
 .workspace-bar {
@@ -151,97 +272,6 @@ nav {
   flex-shrink: 0;
 }
 
-/* Dashboard content */
-.dashboard-header {
-  text-align: center;
-}
-
-.dashboard-header h1 {
-  font-size: clamp(1.5rem, 4vw, 2.2rem);
-  font-weight: 800;
-  background: linear-gradient(135deg, #fff, var(--accent-cyan), var(--accent-blue));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.4rem;
-}
-
-.dashboard-header p {
-  color: var(--text-secondary);
-  font-size: 1rem;
-}
-
-/* Chat Area */
-.chat-container {
-  flex: 1;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background: var(--bg-card);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  display: flex;
-  flex-direction: column;
-  min-height: 400px;
-}
-
-.chat-messages {
-  flex: 1;
-  padding: 1.5rem;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.chat-messages::-webkit-scrollbar { width: 4px; }
-.chat-messages::-webkit-scrollbar-track { background: transparent; }
-.chat-messages::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.15); border-radius: 4px; }
-
-.chat-placeholder {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  text-align: center;
-  padding: 2rem;
-}
-
-.chat-placeholder span {
-  background: rgba(0, 212, 255, 0.06);
-  border: 1px solid rgba(0, 212, 255, 0.12);
-  border-radius: 12px;
-  padding: 1rem 2rem;
-}
-
-.chat-bubble {
-  max-width: 75%;
-  padding: 0.75rem 1.1rem;
-  border-radius: 14px;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  animation: bubbleIn 0.25s ease forwards;
-}
-
-@keyframes bubbleIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.chat-bubble.bot {
-  align-self: flex-start;
-  background: rgba(0, 212, 255, 0.08);
-  border: 1px solid rgba(0, 212, 255, 0.15);
-  color: var(--text-primary);
-}
-
-.chat-bubble.user {
-  align-self: flex-end;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-  color: #fff;
-}
-
 /* Workspace switch toast */
 .workspace-toast {
   position: fixed;
@@ -266,46 +296,6 @@ nav {
   opacity: 1;
 }
 
-/* Input */
-.chat-input-area {
-  display: flex;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--glass-border);
-}
-
-.chat-input {
-  flex: 1;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  font-family: inherit;
-  outline: none;
-  transition: border-color var(--transition), box-shadow var(--transition);
-}
-
-.chat-input::placeholder { color: var(--text-muted); }
-.chat-input:focus { border-color: var(--accent-cyan); box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1); }
-
-.chat-send-btn {
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-  border: none;
-  border-radius: 12px;
-  padding: 0.75rem 1.4rem;
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform var(--transition), box-shadow var(--transition);
-}
-
-.chat-send-btn:hover { transform: translateY(-2px); box-shadow: var(--glow-cyan); }
-.chat-send-btn:active { transform: translateY(0); }
-.chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
 /* Footer */
 footer {
   text-align: center;
@@ -317,7 +307,7 @@ footer {
 
 @media (max-width: 768px) {
   nav { padding: 0 1rem; }
-  .dashboard { padding: 1.5rem 1rem; }
+  .dashboard { padding: 2rem 1rem; }
   .chat-input-area { flex-direction: column; }
 }
 </style>
@@ -331,14 +321,12 @@ footer {
   </div>
 </nav>
 
-<!-- Workspace switch toast -->
 <div class="workspace-toast" id="workspace-toast"></div>
 
 <main class="dashboard">
   <!-- Workspace selector bar -->
   <div class="workspace-bar" id="workspace-bar">
     <span class="workspace-label">Workspace</span>
-    <!-- Pills injected by JS based on AVAILABLE_WORKSPACES -->
   </div>
 
   <div class="dashboard-header">
@@ -379,30 +367,46 @@ import {
   onAuthStateChange,
   getSession,
   signOut,
+  signIn,
+  signUp,
+  handlePostLoginRedirect,
 } from '/lib/auth.js';
 
-// ── Auth gate ────────────────────────────────────────────────────────────────
+// ── Phase 2: Enforce auth gate ───────────────────────────────────────────────
+// requireAuth redirects to index.html with ?next=<current-url> if no session.
+// This is synchronous enough to block dashboard render for unauthenticated users.
 (async () => {
   const session = await requireAuth('/index.html', window.location.href);
-  if (!session) return;
+  if (!session) return; // Redirected
 
+  // Auth passed — populate window state
   window.__TUSABOTS_SESSION__ = session;
   window.__TUSABOTS_USER__ = session.user;
   updateNav(session.user?.email);
+
   console.log('[TusaBots] Auth gate passed —', session.user?.email);
 })();
 
+// ── Auth state listener: redirect on sign-out or token expiry ───────────────
 onAuthStateChange((event, session) => {
   window.__TUSABOTS_SESSION__ = session;
   window.__TUSABOTS_USER__ = session?.user ?? null;
   updateNav(session?.user?.email);
-  if (!session) window.location.href = '/index.html';
+
+  if (!session) {
+    console.log('[TusaBots] Session ended — redirecting to login.');
+    window.location.href = '/index.html';
+  }
 });
 
+// ── Auth-fetch helper (attaches Bearer token when session exists) ───────────
 window.authFetch = authFetch;
+
+// ── Expose helpers to classic script block ─────────────────────────────────
 window.getCurrentUser = () => window.__TUSABOTS_USER__;
 window.isLoggedIn     = () => window.__TUSABOTS_SESSION__ !== null;
 
+// ── Navigation bar state ────────────────────────────────────────────────────
 function updateNav(email) {
   const navRight = document.getElementById('nav-right');
   if (email) {
@@ -422,8 +426,6 @@ function updateNav(email) {
 <script>
 // ── Workspace configuration ───────────────────────────────────────────────────
 // Extend this list to add new workspaces.
-// Each entry: { id, label }
-// id must be lowercase alphanumeric + hyphens (used as workspace_id in DB)
 const AVAILABLE_WORKSPACES = [
   { id: 'default',      label: 'General' },
   { id: 'work',        label: 'Work' },
@@ -442,33 +444,27 @@ const WORKSPACE_META = {
 
 // ── State ────────────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'tusabots_workspace';
-
-// Current workspace: default or last-selected
 const currentWorkspace = localStorage.getItem(STORAGE_KEY) || 'default';
-
-// Per-workspace chat histories stored here
 const workspaceHistories = {};
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
-const workspaceBar    = document.getElementById('workspace-bar');
+const workspaceBar     = document.getElementById('workspace-bar');
 const workspaceSubtitle = document.getElementById('workspace-subtitle');
-const messagesEl      = document.getElementById('chat-messages');
-const placeholder     = document.getElementById('chat-placeholder');
-const input           = document.getElementById('chat-input');
-const sendBtn         = document.getElementById('chat-send');
-const toastEl         = document.getElementById('workspace-toast');
+const messagesEl       = document.getElementById('chat-messages');
+const placeholder      = document.getElementById('chat-placeholder');
+const input            = document.getElementById('chat-input');
+const sendBtn          = document.getElementById('chat-send');
+const toastEl          = document.getElementById('workspace-toast');
 
 // ── Build workspace pills ────────────────────────────────────────────────────
 function renderWorkspacePills() {
-  // Remove existing pills (keep the label)
   const existing = workspaceBar.querySelectorAll('.workspace-pill');
   existing.forEach(el => el.remove());
-
   AVAILABLE_WORKSPACES.forEach(ws => {
     const pill = document.createElement('button');
     pill.className = 'workspace-pill' + (ws.id === currentWorkspace ? ' active' : '');
     pill.type = 'button';
-    pill.innerHTML = `<span class="workspace-dot"></span>${ws.label}`;
+    pill.innerHTML = '<span class="workspace-dot"></span>' + ws.label;
     pill.addEventListener('click', () => switchWorkspace(ws.id));
     workspaceBar.appendChild(pill);
   });
@@ -477,169 +473,19 @@ function renderWorkspacePills() {
 // ── Switch workspace ─────────────────────────────────────────────────────────
 async function switchWorkspace(workspaceId) {
   if (workspaceId === currentWorkspace) return;
-
-  // Persist selection
   localStorage.setItem(STORAGE_KEY, workspaceId);
-
-  // Update active pill
-  workspaceBar.querySelectorAll('.workspace-pill').forEach(pill => {
-    const isActive = pill.textContent.trim() === AVAILABLE_WORKSPACES.find(w => w.id === workspaceId)?.label;
-    pill.classList.toggle('active', isActive);
-  });
-
-  // Update subtitle
+  renderWorkspacePills();
   workspaceSubtitle.textContent = WORKSPACE_META[workspaceId]?.subtitle || workspaceId;
-
-  // Show toast
-  showToast(`Switched to ${workspaceId}`);
-
-  // Clear chat UI
+  showToast('Switched to ' + workspaceId);
   messagesEl.innerHTML = '';
   const ph = document.createElement('div');
   ph.className = 'chat-placeholder';
   ph.innerHTML = '<span>🤖 Ready in workspace: ' + workspaceId + '</span>';
   messagesEl.appendChild(ph);
-
-  // Reload history for new workspace from server
   await loadHistoryForWorkspace(workspaceId);
 }
 
-// ── Load history for a workspace (fetch last N from server) ───────────────────
-// Phase 1: we don't persist per-workspace frontend history across page loads.
-// The server stores all messages; frontend history is rebuilt from the chat function's
-// response. We send an empty history array and rely on
-// ── Load history for a workspace from the server ───────────────────────────────
-// We POST a special "peek" message that is a no-op; the server returns the
-// scoped messages without saving a new user/assistant pair.
-// Recognised by chat.js via a flag in the request body.
-async function loadHistoryForWorkspace(workspaceId) {
-  // Send a no-save peek request to get the last 20 messages for this workspace
-  // without adding to history. chat.js handles peekMode: true specially.
-  try {
-    const res = await authFetch('/.netlify/functions/chat', {
-      method: 'POST',
-      body: JSON.stringify({
-        message: '[peek]',
-        history: [],
-        workspaceId,
-        peekMode: true,
-      })
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (Array.isArray(data.history)) {
-      // Restore bubbles from server-sent history
-      data.history.forEach(msg => {
-        addBubble(msg.content, msg.role === 'assistant' ? 'bot' : 'user', false /* no scroll */);
-      });
-      // Store in memory for sendMessage()
-      workspaceHistories[workspaceId] = data.history;
-    }
-  } catch (e) {
-    console.warn('[TusaBots] loadHistoryForWorkspace failed', e);
-  }
-}
-
-// ── Send message ─────────────────────────────────────────────────────────────
-async function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  addBubble(text, 'user');
-  setInputEnabled(false);
-
-  // Grab and clear this workspace's history
-  const history = workspaceHistories[currentWorkspace] || [];
-
-  try {
-    const res = await authFetch('/.netlify/functions/chat', {
-      method: 'POST',
-      body: JSON.stringify({ message: text, history, workspaceId: currentWorkspace })
-    });
-
-    if (res.status === 401) {
-      addBubble('Session expired. Please sign in again.', 'bot');
-      window.location.href = '/index.html';
-      return;
-    }
-
-    const data = await res.json();
-
-    // ── Workspace switch response ──
-    if (data.workspaceSwitch) {
-      // Bot confirmed a workspace switch — update UI
-      const newWs = data.workspaceSwitch;
-      localStorage.setItem(STORAGE_KEY, newWs);
-      workspaceSubtitle.textContent = WORKSPACE_META[newWs]?.subtitle || newWs;
-      renderWorkspacePills();
-      showToast(`Switched to ${newWs}`);
-      messagesEl.innerHTML = '';
-      const ph = document.createElement('div');
-      ph.className = 'chat-placeholder';
-      ph.innerHTML = `<span>🤖 Workspace: ${newWs} — ask me anything</span>`;
-      messagesEl.appendChild(ph);
-      workspaceHistories[newWs] = [];
-      return;
-    }
-
-    if (data.reply) {
-      addBubble(data.reply, 'bot');
-      // Update stored history
-      const h = workspaceHistories[currentWorkspace] || [];
-      h.push({ role: 'user', content: text });
-      h.push({ role: 'assistant', content: data.reply });
-      if (h.length > 20) workspaceHistories[currentWorkspace] = h.slice(-20);
-      else workspaceHistories[currentWorkspace] = h;
-    } else {
-      addBubble('Error: ' + (data.detail || data.error || 'Unknown'), 'bot');
-    }
-  } catch (e) {
-    addBubble('Connection error. Try again.', 'bot');
-  }
-
-  setInputEnabled(true);
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function addBubble(text, type, scroll = true) {
-  const ph = document.getElementById('chat-placeholder');
-  if (ph) ph.remove();
-
-  const div = document.createElement('div');
-  div.className = 'chat-bubble ' + type;
-  div.textContent = text;
-  messagesEl.appendChild(div);
-  if (scroll) messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-
-function setInputEnabled(enabled) {
-  input.disabled = !enabled;
-  sendBtn.disabled = !enabled;
-  sendBtn.textContent = enabled ? 'Send' : '...';
-}
-
-function showToast(text) {
-  toastEl.textContent = text;
-  toastEl.classList.add('visible');
-  clearTimeout(toastEl._timer);
-  toastEl._timer = setTimeout(() => toastEl.classList.remove('visible'), 2500);
-}
-
-input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') sendMessage();
-});
-
-// ── Init ──────────────────────────────────────────────────────────────────────
-// Render pills and set initial subtitle
-renderWorkspacePills();
-workspaceSubtitle.textContent = WORKSPACE_META[currentWorkspace]?.subtitle || currentWorkspace;
-
-// Start with an empty in-memory history; will be populated by sendMessage
-workspaceHistories[currentWorkspace] = [];
-
-
-// ── Load history for a workspace from the server ───────────────────────────────
-// POST a no-save peek to get last 20 messages for this workspace.
+// ── Load history for a workspace (peek mode — no AI call, no message save) ──
 async function loadHistoryForWorkspace(workspaceId) {
   try {
     const res = await authFetch('/.netlify/functions/chat', {
@@ -649,7 +495,9 @@ async function loadHistoryForWorkspace(workspaceId) {
     if (!res.ok) return;
     const data = await res.json();
     if (Array.isArray(data.history)) {
-      data.history.forEach(msg => addBubble(msg.content, msg.role === 'assistant' ? 'bot' : 'user', false));
+      data.history.forEach(msg =>
+        addBubble(msg.content, msg.role === 'assistant' ? 'bot' : 'user', false)
+      );
       workspaceHistories[workspaceId] = data.history;
     }
   } catch (e) { console.warn('[TusaBots] loadHistoryForWorkspace failed', e); }
@@ -679,7 +527,6 @@ async function sendMessage() {
 
     const data = await res.json();
 
-    // Workspace switch from bot command
     if (data.workspaceSwitch) {
       const newWs = data.workspaceSwitch;
       localStorage.setItem(STORAGE_KEY, newWs);
@@ -709,6 +556,7 @@ async function sendMessage() {
   setInputEnabled(true);
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function addBubble(text, type, scroll = true) {
   const ph = document.getElementById('chat-placeholder');
   if (ph) ph.remove();
@@ -732,9 +580,11 @@ function showToast(text) {
   toastEl._timer = setTimeout(() => toastEl.classList.remove('visible'), 2500);
 }
 
-input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
-
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderWorkspacePills();
 workspaceSubtitle.textContent = WORKSPACE_META[currentWorkspace]?.subtitle || currentWorkspace;
 workspaceHistories[currentWorkspace] = [];
+</script>
+
+</body>
+</html>
