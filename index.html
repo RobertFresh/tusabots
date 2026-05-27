@@ -2,6 +2,15 @@
 <html lang="en">
 <head>
 <script>window.__SUPABASE_URL__     = "https://bmzugcvblitljrawghwx.supabase.co";window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtenVnY3ZibGl0bGpyYXdnaHd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2Mjg0MDEsImV4cCI6MjA5MzIwNDQwMX0.-JuAmr1R6P6ntdK85NkZ2bmcgPg_DFycO0_COX0JA5M";</script>
+<script>
+// Inject Supabase env vars into window.ENV so lib/ modules can read them
+// without needing a build step or import.meta.env (not available in plain HTML).
+window.ENV = {
+  get VITE_SUPABASE_URL()     { return window.__SUPABASE_URL__;     },
+  get VITE_SUPABASE_ANON_KEY() { return window.__SUPABASE_ANON_KEY__; },
+};
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TusaBots - Coming Soon</title>
