@@ -15,9 +15,9 @@ const { retrieveMemory } = require('../memory/retrieveMemory');
  * @param {number} [params.memoryLimit=20] - How many stored messages to fetch
  * @returns {Promise<{system: string, messages: Array}>} - Context ready for Anthropic
  */
-async function buildContext({ userId, currentMessage, conversationHistory = [], memoryLimit = 20 }) {
-  // Fetch curated memory from Supabase
-  const storedMemory = await retrieveMemory(userId, memoryLimit);
+async function buildContext({ userId, currentMessage, conversationHistory = [], memoryLimit = 20, workspaceId = 'default' }) {
+  // Fetch curated memory from Supabase — scoped to user + workspace
+  const storedMemory = await retrieveMemory(userId, memoryLimit, workspaceId);
 
   // Merge stored memory + frontend history, then append current message
   // Frontend history is de-duplicated against stored memory to avoid repetition.
@@ -30,6 +30,7 @@ async function buildContext({ userId, currentMessage, conversationHistory = [], 
 
   console.log('[buildContext]', {
     userId,
+    workspaceId,
     storedMessages: storedMemory.length,
     frontendHistory: dedupedHistory.length,
     totalMessages: messages.length,

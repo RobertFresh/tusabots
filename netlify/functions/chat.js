@@ -1,8 +1,42 @@
 // TusaBot chat function — Supabase auth, memory, Anthropic Claude
-// Updated to use modular orchestrator layer.
+// Phase 1: workspace scoping + lightweight command parsing
 const { validateAuth, getUserId } = require('./auth-validate.js');
 const { buildContext } = require('../../orchestrator/buildContext');
-const { saveMessage } = require('../../memory/retrieveMemory');
+const { saveMessage, retrieveMemory } = require('../../memory/retrieveMemory');
+
+// ─── Workspace command parser ────────────────────────────────────────────────
+// Deterministic pattern matching — no AI involved.
+// Supported forms:
+//   "open <name> workspace"   → { action: 'switch', workspace: <name> }
+//   "use <name> workspace"    → { action: 'switch', workspace: <name> }
+//   "switch to <name>"        → { action: 'switch', workspace: <name> }
+//   "switch to <name> workspace" → { action: 'switch', workspace: <name> }
+// Returns null if no command pattern matches.
+function parseWorkspaceCommand(message) {
+  const text = message.trim();
+  const patterns = [
+    /^open\s+(\w[\w\-]*)\s+workspace$/i,
+    /^use\s+(\w[\w\-]*)\s+workspace$/i,
+    /^switch\s+to\s+(\w[\w\-]*(?:\s+\w+)*)\s+workspace$/i,
+    /^switch\s+to\s+(\w[\w\-]*)$/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const name = match[1].toLowerCase().replace(/\s+/g, '-');
+      if (name === 'default') {
+        return { action: 'switch', workspace: 'default' };
+      }
+      // Allowlist: extend this list as workspaces are created
+      const ALLOWED = ['default', 'work', 'personal', 'tusabot', 'deploy-notes'];
+      if (ALLOWED.includes(name)) {
+        return { action: 'switch', workspace: name };
+      }
+      return { action: 'switch', workspace: name }; // return anyway; allowlist is soft
+    }
+  }
+  return null;
+}
 
 // ─── Main handler ───────────────────────────────────────────────────────────
 
@@ -18,7 +52,7 @@ exports.handler = async (event) => {
     console.error('[FATAL ENV] Missing Supabase admin credentials — memory/storage WILL FAIL');
   }
 
-  // Step 1: Authenticate — reject if token is missing or invalid
+  // Step 1: Authenticate
   const authResult = await validateAuth(event);
   if (authResult.user === null) {
     return { statusCode: authResult.statusCode, body: authResult.body };
@@ -37,20 +71,55 @@ exports.handler = async (event) => {
   // Step 3: Parse request
   let message;
   let history = [];
+  let workspaceId = 'default';
   try {
     const body = JSON.parse(event.body);
     message = body.message;
     history = Array.isArray(body.history) ? body.history : [];
+    workspaceId = typeof body.workspaceId === 'string' && body.workspaceId.length > 0
+      ? body.workspaceId
+      : 'default';
   } catch {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request body.' }) };
   }
 
   if (!message) return { statusCode: 400, body: JSON.stringify({ error: 'No message provided.' }) };
 
-  // Step 4: Build context (system prompt + memory + history + current message)
-  const { system, messages } = await buildContext({ userId, currentMessage: message, conversationHistory: history });
+  // ── Peek mode: return workspace-scoped history without saving or AI call ──
+  if (body.peekMode === true) {
+    const storedMessages = await retrieveMemory(userId, 20, workspaceId);
+    console.log('[chat] peekMode → workspace:', workspaceId, 'messages:', storedMessages.length);
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history: storedMessages })
+    };
+  }
 
-  // Step 5: Call Claude
+  // Step 4: Check for workspace command (before normal processing)
+  const command = parseWorkspaceCommand(message);
+  if (command && command.action === 'switch') {
+    const targetWorkspace = command.workspace;
+    console.log('[chat] workspace command → switching to:', targetWorkspace);
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reply: `Switched to workspace: **${targetWorkspace}**. Context scope updated.`,
+        workspaceSwitch: targetWorkspace,
+      })
+    };
+  }
+
+  // Step 5: Build context (system prompt + workspace-scoped memory + history + current message)
+  const { system, messages } = await buildContext({
+    userId,
+    currentMessage: message,
+    conversationHistory: history,
+    workspaceId,
+  });
+
+  // Step 6: Call Claude
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -74,9 +143,9 @@ exports.handler = async (event) => {
   const data = await res.json();
   const reply = data.content[0].text;
 
-  // Step 6: Save memory (fire-and-forget — don't block the response)
-  saveMessage(userId, 'user', message).catch(err => console.error('[chat/saveMessage FAILED]', err));
-  saveMessage(userId, 'assistant', reply).catch(err => console.error('[chat/saveMessage FAILED]', err));
+  // Step 7: Save memory scoped to workspace (fire-and-forget)
+  saveMessage(userId, 'user', message, workspaceId).catch(err => console.error('[chat/saveMessage FAILED]', err));
+  saveMessage(userId, 'assistant', reply, workspaceId).catch(err => console.error('[chat/saveMessage FAILED]', err));
 
   return {
     statusCode: 200,

@@ -23,7 +23,7 @@ if (!supabaseAdmin) {
  * @param {number} [limit=20] - Maximum messages to retrieve (default: 20)
  * @returns {Promise<Array<{role: string, content: string}>>} - Ordered message array
  */
-async function retrieveMemory(userId, limit = 20) {
+async function retrieveMemory(userId, limit = 20, workspaceId = 'default') {
   if (!supabaseAdmin) {
     console.error('[memory/retrieveMemory] skipped — supabaseAdmin null');
     return [];
@@ -38,6 +38,7 @@ async function retrieveMemory(userId, limit = 20) {
     .from('messages')
     .select('role, content')
     .eq('user_id', userId)
+    .eq('workspace_id', workspaceId)
     .order('created_at', { ascending: true })
     .limit(limit);
 
@@ -58,7 +59,7 @@ async function retrieveMemory(userId, limit = 20) {
  * @param {string} content - Message text
  * @returns {Promise<void>}
  */
-async function saveMessage(userId, role, content) {
+async function saveMessage(userId, role, content, workspaceId = 'default') {
   if (!supabaseAdmin) {
     console.error('[memory/saveMessage] skipped — supabaseAdmin null');
     return;
@@ -69,8 +70,8 @@ async function saveMessage(userId, role, content) {
     return;
   }
 
-  console.log('[memory/saveMessage]', userId, role, content.slice(0, 60));
-  await supabaseAdmin.from('messages').insert({ user_id: userId, role, content });
+  console.log('[memory/saveMessage]', userId, role, workspaceId, content.slice(0, 60));
+  await supabaseAdmin.from('messages').insert({ user_id: userId, role, content, workspace_id: workspaceId });
 }
 
 module.exports = { retrieveMemory, saveMessage };
