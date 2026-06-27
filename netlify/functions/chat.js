@@ -69,11 +69,15 @@ exports.handler = async (event) => {
   }
 
   // Step 3: Parse request
+  // NOTE: `body` is declared OUTSIDE the try block so it stays in scope for the
+  // peekMode check below. (Previously it was a `const` inside the try, so it
+  // vanished after the block and every request crashed with "Error: Unknown".)
+  let body;
   let message;
   let history = [];
   let workspaceId = 'default';
   try {
-    const body = JSON.parse(event.body);
+    body = JSON.parse(event.body);
     message = body.message;
     history = Array.isArray(body.history) ? body.history : [];
     workspaceId = typeof body.workspaceId === 'string' && body.workspaceId.length > 0
