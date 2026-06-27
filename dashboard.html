@@ -585,6 +585,20 @@ function showToast(text) {
 renderWorkspacePills();
 workspaceSubtitle.textContent = WORKSPACE_META[currentWorkspace]?.subtitle || currentWorkspace;
 workspaceHistories[currentWorkspace] = [];
+
+// ── Wire up the input controls ───────────────────────────────────────────────
+// (These listeners were missing — the Send button and Enter key had nothing
+//  connected to them, so messages never sent.)
+sendBtn.addEventListener('click', sendMessage);
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// Load any saved conversation for the current workspace on page load.
+loadHistoryForWorkspace(currentWorkspace);
 </script>
 
 </body>
