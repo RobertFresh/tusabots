@@ -57,20 +57,20 @@ exports.handler = async (event) => {
   // Rate limit by IP address (not just visitorId which is spoofable)
   const clientIp = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown').split(',')[0].trim();
 
-  // Check if this IP already got a real reply today
-  const { data: ipReplies, error: ipCheckErr } = await supabase
+  // Per-IP cooldown: 1 message per 10 seconds (prevents spam, allows conversation)
+  const { data: recentIpMsgs, error: ipCheckErr } = await supabase
     .from('public_messages')
     .select('id')
     .eq('is_bot', true)
     .eq('visitor_id', clientIp)
-    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+    .gte('created_at', new Date(Date.now() - 10 * 1000).toISOString())
     .limit(1);
 
   if (ipCheckErr) {
     console.error('[public-chat] IP rate check failed:', ipCheckErr.message);
   }
 
-  const ipAlreadyReplied = ipReplies && ipReplies.length > 0;
+  const ipCooldown = recentIpMsgs && recentIpMsgs.length > 0;
 
   // Global rate limit: max 10 Claude calls per minute (checked in DB, not in-memory)
   const { data: recentBotMsgs, error: globalCheckErr } = await supabase
@@ -99,10 +99,10 @@ exports.handler = async (event) => {
 
   let reply;
 
-  if (ipAlreadyReplied || globalRateLimited) {
-    // Canned response — zero tokens spent
-    reply = CANNED_RESPONSE;
-    console.log('[public-chat] canned reply for IP:', clientIp, ipAlreadyReplied ? '(already replied)' : '(rate limited)');
+  if (ipCooldown || globalRateLimited) {
+    // Cooldown or rate limited — canned response, zero tokens
+    reply = 'Conveyor backed up. Unit-7 processing previous work orders. Stand by.';
+    console.log('[public-chat] throttled for IP:', clientIp, ipCooldown ? '(cooldown)' : '(rate limited)');
   } else {
     // Real Claude Haiku call
     try {
