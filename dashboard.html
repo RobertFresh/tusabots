@@ -445,7 +445,7 @@ const WORKSPACE_META = {
 
 // ── State ────────────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'tusabots_workspace';
-const currentWorkspace = localStorage.getItem(STORAGE_KEY) || 'default';
+let currentWorkspace = localStorage.getItem(STORAGE_KEY) || 'default';
 const workspaceHistories = {};
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
@@ -474,6 +474,7 @@ function renderWorkspacePills() {
 // ── Switch workspace ─────────────────────────────────────────────────────────
 async function switchWorkspace(workspaceId) {
   if (workspaceId === currentWorkspace) return;
+  currentWorkspace = workspaceId;
   localStorage.setItem(STORAGE_KEY, workspaceId);
   renderWorkspacePills();
   workspaceSubtitle.textContent = WORKSPACE_META[workspaceId]?.subtitle || workspaceId;

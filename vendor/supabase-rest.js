@@ -134,10 +134,34 @@ export async function signOut() {
 
 export async function getSession() {
   const session = loadSession();
-  if (session?.access_token) {
-    return { session, user: session.user };
+  if (!session?.access_token) {
+    return { session: null, user: null };
   }
-  return { session: null, user: null };
+
+  // Check if token has expired
+  if (session.expires_at && session.expires_at * 1000 < Date.now()) {
+    console.log('[auth] token expired, attempting refresh');
+    if (session.refresh_token) {
+      try {
+        const refreshed = await supabaseFetch('/auth/v1/token?grant_type=refresh_token', {
+          method: 'POST',
+          body: JSON.stringify({ refresh_token: session.refresh_token }),
+        });
+        saveSession(refreshed);
+        return { session: refreshed, user: refreshed.user };
+      } catch (err) {
+        console.error('[auth] refresh failed:', err.message);
+        clearSession();
+        return { session: null, user: null };
+      }
+    } else {
+      console.log('[auth] no refresh token, clearing session');
+      clearSession();
+      return { session: null, user: null };
+    }
+  }
+
+  return { session, user: session.user };
 }
 
 export async function getUser() {

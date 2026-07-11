@@ -11,36 +11,25 @@ async function validateAuth(event) {
   const bearerPresent = authHeader?.startsWith('Bearer ');
   const token = bearerPresent ? authHeader.slice(7) : null;
 
-  console.log('[auth] auth header present:', !!authHeader);
+  console.log('[auth] auth header present:', !!authHeader, 'bearer:', !!bearerPresent);
 
   if (!authHeader || !bearerPresent) {
     console.error('[auth] missing or malformed Authorization header');
     return {
       user: null,
       statusCode: 401,
-      body: JSON.stringify({
-        error: 'Unauthorized. No token provided.',
-        authHeaderPresent: !!authHeader,
-        bearerPrefixPresent: !!bearerPresent,
-        tokenPrefix: null,
-        supabaseError: null,
-      }),
+      body: JSON.stringify({ error: 'Unauthorized.' }),
     };
   }
 
-  console.log('[auth] token prefix:', token?.slice(0, 20));
+  console.log('[auth] token present:', !!token);
 
   if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_ANON_KEY) {
+    console.error('[auth] FATAL: Supabase env vars not set');
     return {
       user: null,
       statusCode: 503,
-      body: JSON.stringify({
-        error: 'Server misconfiguration. Supabase env vars not set.',
-        authHeaderPresent: !!authHeader,
-        bearerPrefixPresent: !!bearerPresent,
-        tokenPrefix: token?.slice(0, 10) ?? null,
-        supabaseError: null,
-      }),
+      body: JSON.stringify({ error: 'Service temporarily unavailable.' }),
     };
   }
 
@@ -53,17 +42,11 @@ async function validateAuth(event) {
   const { data: user, error } = await supabase.auth.getUser(token);
 
   if (error || !user) {
-    console.error('[auth] getUser failed:', error?.message);
+    console.error('[auth] getUser failed:', error?.message, 'token present:', !!token);
     return {
       user: null,
       statusCode: 401,
-      body: JSON.stringify({
-        error: 'Unauthorized. Invalid or expired token.',
-        authHeaderPresent: !!authHeader,
-        bearerPrefixPresent: !!bearerPresent,
-        tokenPrefix: token?.slice(0, 10) ?? null,
-        supabaseError: error?.message ?? null,
-      }),
+      body: JSON.stringify({ error: 'Unauthorized.' }),
     };
   }
 

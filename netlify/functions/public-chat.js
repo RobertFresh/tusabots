@@ -8,22 +8,22 @@ const FACTORY_PROMPT = `You are Unit-7, a factory robot on an assembly line. You
 
 const CANNED_RESPONSE = 'Unit has completed its designated interaction cycle. Returning to assembly line. Further communication requires authorised access. Oil levels: stable.';
 
-// Global rate limit: max Claude calls per minute across all visitors
-const GLOBAL_RATE_LIMIT = 10;
-let callTimestamps = [];
-
-function isGlobalRateLimited() {
-  const now = Date.now();
-  callTimestamps = callTimestamps.filter(t => now - t < 60000);
-  if (callTimestamps.length >= GLOBAL_RATE_LIMIT) return true;
-  callTimestamps.push(now);
-  return false;
-}
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = ['https://tusabots.netlify.app', 'https://tusabots.com', 'https://www.tusabots.com'];
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' };
   }
+
+  // CORS origin check
+  const origin = event.headers['origin'] || '';
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden.' }) };
+  }
+  const corsHeaders = origin && ALLOWED_ORIGINS.includes(origin)
+    ? { 'Access-Control-Allow-Origin': origin }
+    : {};
 
   // Validate env
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -54,38 +54,55 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Visitor ID required.' }) };
   }
 
+  // Rate limit by IP address (not just visitorId which is spoofable)
+  const clientIp = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown').split(',')[0].trim();
+
+  // Check if this IP already got a real reply today
+  const { data: ipReplies, error: ipCheckErr } = await supabase
+    .from('public_messages')
+    .select('id')
+    .eq('is_bot', true)
+    .eq('visitor_id', clientIp)
+    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+    .limit(1);
+
+  if (ipCheckErr) {
+    console.error('[public-chat] IP rate check failed:', ipCheckErr.message);
+  }
+
+  const ipAlreadyReplied = ipReplies && ipReplies.length > 0;
+
+  // Global rate limit: max 10 Claude calls per minute (checked in DB, not in-memory)
+  const { data: recentBotMsgs, error: globalCheckErr } = await supabase
+    .from('public_messages')
+    .select('id')
+    .eq('is_bot', true)
+    .gte('created_at', new Date(Date.now() - 60 * 1000).toISOString());
+
+  if (globalCheckErr) {
+    console.error('[public-chat] global rate check failed:', globalCheckErr.message);
+  }
+
+  const globalRateLimited = recentBotMsgs && recentBotMsgs.length >= 10;
+
   // Save the visitor's message
   const { error: insertErr } = await supabase.from('public_messages').insert({
     sender_name: senderName,
     content: message,
     is_bot: false,
-    visitor_id: visitorId,
+    visitor_id: clientIp,
   });
   if (insertErr) {
     console.error('[public-chat] insert visitor msg failed:', insertErr.message);
     return { statusCode: 500, body: JSON.stringify({ error: 'Failed to save message.' }) };
   }
 
-  // Check if this visitor already got their one real reply
-  const { data: prevBotReplies, error: checkErr } = await supabase
-    .from('public_messages')
-    .select('id')
-    .eq('is_bot', true)
-    .eq('visitor_id', visitorId)
-    .limit(1);
-
-  if (checkErr) {
-    console.error('[public-chat] visitor check failed:', checkErr.message);
-  }
-
-  const alreadyReplied = prevBotReplies && prevBotReplies.length > 0;
-
   let reply;
 
-  if (alreadyReplied || isGlobalRateLimited()) {
+  if (ipAlreadyReplied || globalRateLimited) {
     // Canned response — zero tokens spent
     reply = CANNED_RESPONSE;
-    console.log('[public-chat] canned reply for visitor:', visitorId, alreadyReplied ? '(already replied)' : '(rate limited)');
+    console.log('[public-chat] canned reply for IP:', clientIp, ipAlreadyReplied ? '(already replied)' : '(rate limited)');
   } else {
     // Real Claude Haiku call
     try {
@@ -123,7 +140,7 @@ exports.handler = async (event) => {
     sender_name: 'Unit-7',
     content: reply,
     is_bot: true,
-    visitor_id: visitorId,
+    visitor_id: clientIp,
   });
   if (botInsertErr) {
     console.error('[public-chat] insert bot reply failed:', botInsertErr.message);
@@ -131,7 +148,7 @@ exports.handler = async (event) => {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
     body: JSON.stringify({ reply }),
   };
 };

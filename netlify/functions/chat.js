@@ -45,6 +45,13 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method not allowed' };
   }
 
+  // CORS origin check
+  const origin = event.headers['origin'] || '';
+  const ALLOWED_ORIGINS = ['https://tusabots.netlify.app', 'https://tusabots.com', 'https://www.tusabots.com'];
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden.' }) };
+  }
+
   // ── Runtime env validation (observational only) ──
   console.log('[env] SUPABASE_URL present:', !!process.env.SUPABASE_URL);
   console.log('[env] SUPABASE_SERVICE_ROLE_KEY present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -87,7 +94,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request body.' }) };
   }
 
-  if (!message) return { statusCode: 400, body: JSON.stringify({ error: 'No message provided.' }) };
+  if (!message || message.length > 4000) return { statusCode: 400, body: JSON.stringify({ error: 'Message required (max 4000 chars).' }) };
 
   // ── Peek mode: return workspace-scoped history without saving or AI call ──
   if (body.peekMode === true) {
@@ -141,7 +148,8 @@ exports.handler = async (event) => {
 
   if (!res.ok) {
     const err = await res.text();
-    return { statusCode: 500, body: JSON.stringify({ error: 'API error', detail: err }) };
+    console.error('[chat] Claude API error:', err);
+    return { statusCode: 500, body: JSON.stringify({ error: 'AI service unavailable.' }) };
   }
 
   const data = await res.json();
