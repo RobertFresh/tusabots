@@ -29,6 +29,14 @@ CREATE POLICY "public_messages_insert_service" ON public_messages
     (current_setting('request.jwt.claims', true)::json ->> 'role') = 'service_role'
   );
 
+-- Base table privileges (REQUIRED — RLS policies alone are NOT enough).
+-- Without these GRANTs, even a `USING (true)` policy returns "permission denied
+-- for table". These were applied manually in the Supabase SQL Editor on
+-- 11/07/2026 but were originally missing from this file — now included so the
+-- migration is self-contained and reproducible.
+GRANT SELECT ON public_messages TO anon;            -- anon reads (Realtime + initial load)
+GRANT SELECT, INSERT ON public_messages TO service_role;  -- server reads (visitor rate-check) + writes
+
 -- Enable Supabase Realtime on this table
 ALTER PUBLICATION supabase_realtime ADD TABLE public_messages;
 
