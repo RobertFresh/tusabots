@@ -43,10 +43,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 .nav-login-btn:hover{border-color:var(--accent-cyan);color:var(--accent-cyan);background:rgba(0,212,255,0.06)}
 
 /* Main layout */
-.main-content{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 1rem 1rem;max-width:700px;width:100%;margin:0 auto}
+.main-content{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 1rem 1rem;max-width:1400px;width:100%;margin:0 auto}
 
-/* Chat container */
-.public-chat{flex:1;width:100%;display:flex;flex-direction:column;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius);min-height:0;max-height:calc(100vh - 120px)}
+/* Stream layout: video (left/centre) + chat rail (right) */
+.stream-layout{display:flex;gap:1rem;width:100%;flex:1;min-height:0;max-height:calc(100vh - 90px)}
+.stream-video{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;background:#000;border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden}
+.stream-video iframe{width:100%;height:100%;border:0;flex:1}
+
+/* Chat container — now a narrow rail on the right */
+.public-chat{flex:0 0 360px;width:360px;display:flex;flex-direction:column;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius);min-height:0}
 .chat-header{padding:0.75rem 1.25rem;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:0.5rem;flex-shrink:0}
 .chat-header-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-amber);box-shadow:0 0 6px var(--accent-amber);animation:dotPulse 2s ease-in-out infinite}
 @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -113,10 +118,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 
 footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:var(--text-muted);font-size:0.75rem;border-top:1px solid var(--glass-border);flex-shrink:0}
 
+@media(max-width:900px){
+  .main-content{padding:62px 0.5rem 0.5rem}
+  .stream-layout{flex-direction:column;max-height:none}
+  .stream-video{flex:0 0 auto;aspect-ratio:16/9;width:100%}
+  .public-chat{flex:1 1 auto;width:100%;min-height:320px}
+  .chat-msg-bubble{max-width:92%}
+}
 @media(max-width:600px){
   nav{padding:0 0.75rem}
-  .main-content{padding:62px 0.5rem 0.5rem}
-  .chat-msg-bubble{max-width:92%}
 }
 </style>
 </head>
@@ -168,9 +178,17 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
   </div>
 </div>
 
-<!-- Main content: the group chat -->
+<!-- Main content: stream video + group chat -->
 <div class="main-content">
-  <div class="public-chat" id="public-chat">
+  <div class="stream-layout">
+    <div class="stream-video">
+      <iframe
+        src="https://player.twitch.tv/?channel=mrtwiggbot&parent=tusabots.com&parent=www.tusabots.com&parent=tusabots.netlify.app&muted=false"
+        allowfullscreen
+        title="Live stream">
+      </iframe>
+    </div>
+    <div class="public-chat" id="public-chat">
     <div class="chat-header">
       <div class="chat-header-dot"></div>
       <span class="chat-header-text">Factory Floor — Unit-7 Online</span>
@@ -185,6 +203,7 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
       </div>
       <input type="text" class="chat-input" id="chat-input" placeholder="Say something to Unit-7..." autocomplete="off" maxlength="500" disabled>
       <button class="chat-send-btn" id="chat-send" disabled>Send</button>
+    </div>
     </div>
   </div>
 </div>
