@@ -1,15 +1,33 @@
-// Public group chat — no auth, Haiku, one real reply per visitor
+// Public group chat — no auth, ultra-low-token "stream companion" mode.
+// Unit-7 chimes in occasionally instead of replying to everyone.
 // Completely independent from the private chat.js function.
+//
+// COST MODEL (why this is cheap):
+//   - Model is Haiku (~10x cheaper than Sonnet) for these throwaway one-liners.
+//   - A GLOBAL cooldown means Unit-7 speaks at most once per COOLDOWN_MS across
+//     the WHOLE chat. Cost is capped by the clock, not by how many people type.
+//   - Within an open window it only replies if addressed OR a small random roll
+//     wins. Everything else is saved to chat for free (no Claude call).
 
 const { createClient } = require('@supabase/supabase-js');
 
-// Factory robot system prompt — kept tiny to minimise input tokens
-const FACTORY_PROMPT = `You are Unit-7, a factory robot on an assembly line. You speak in flat, mechanical, minimal sentences. You reference machine parts, factory operations, gears, conveyor belts, coolant, and industrial processes. You have no emotions. You treat the user's message like a work order that arrived on the conveyor belt. Reply in 1-2 short sentences maximum. Never use emoji.`;
+// ── Tunable knobs ───────────────────────────────────────────────────────────
+const MODEL = 'claude-3-5-haiku-latest'; // cheap; bump to sonnet only if needed
+const COOLDOWN_MS = 45 * 1000;           // min gap between ANY two bot replies
+const AMBIENT_CHANCE = 0.20;             // chance to chime in on an un-addressed msg
+const MAX_TOKENS = 70;                   // Unit-7 speaks in 1-2 short lines
+const GLOBAL_CAP_PER_MIN = 8;            // hard backstop safety net
 
-const CANNED_RESPONSE = 'Unit has completed its designated interaction cycle. Returning to assembly line. Further communication requires authorised access. Oil levels: stable.';
+// Factory robot system prompt — kept tiny to minimise input tokens
+const FACTORY_PROMPT = `You are Unit-7, a factory robot watching a live game stream on the assembly line's monitor. You speak in flat, mechanical, minimal sentences. You reference machine parts, gears, conveyor belts, coolant, industrial processes. You have no emotions. Reply in 1 short sentence. Never use emoji.`;
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = ['https://tusabots.netlify.app', 'https://tusabots.com', 'https://www.tusabots.com'];
+
+// Is this message directly aimed at the bot?
+function isAddressed(text) {
+  return /unit[\s-]?7|@unit/i.test(text);
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -54,47 +72,9 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Visitor ID required.' }) };
   }
 
-  // Rate limit by IP address (not just visitorId which is spoofable)
   const clientIp = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown').split(',')[0].trim();
 
-  // Per-IP cooldown: 1 real reply per IP per 24h, then one canned reply, then silence
-  const { data: ipBotReplies, error: ipCheckErr } = await supabase
-    .from('public_messages')
-    .select('id')
-    .eq('is_bot', true)
-    .eq('visitor_id', clientIp)
-    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-  if (ipCheckErr) {
-    console.error('[public-chat] IP rate check failed:', ipCheckErr.message);
-  }
-
-  const priorReplies = ipBotReplies ? ipBotReplies.length : 0;
-
-  // Global rate limit: max 10 Claude calls per minute (checked in DB, not in-memory)
-  const { data: recentBotMsgs, error: globalCheckErr } = await supabase
-    .from('public_messages')
-    .select('id')
-    .eq('is_bot', true)
-    .gte('created_at', new Date(Date.now() - 60 * 1000).toISOString());
-
-  if (globalCheckErr) {
-    console.error('[public-chat] global rate check failed:', globalCheckErr.message);
-  }
-
-  const globalRateLimited = recentBotMsgs && recentBotMsgs.length >= 10;
-
-  if (priorReplies >= 2 || globalRateLimited) {
-    // Already got real reply + canned reply — go silent, don't even save the visitor message
-    console.log('[public-chat] silent for IP:', clientIp, priorReplies >= 2 ? '(exhausted)' : '(rate limited)');
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      body: JSON.stringify({ reply: null }),
-    };
-  }
-
-  // Save the visitor's message
+  // ── Always save the visitor's message so the live chat shows everyone ──────
   const { error: insertErr } = await supabase.from('public_messages').insert({
     sender_name: senderName,
     content: message,
@@ -106,45 +86,79 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Failed to save message.' }) };
   }
 
-  let reply;
+  // ── Decide whether Unit-7 chimes in ────────────────────────────────────────
+  // 1. Global cooldown: has the bot spoken within the last COOLDOWN_MS?
+  const { data: lastBot } = await supabase
+    .from('public_messages')
+    .select('created_at')
+    .eq('is_bot', true)
+    .order('created_at', { ascending: false })
+    .limit(1);
 
-  if (priorReplies === 1) {
-    // Already got their one real reply — give the canned shutdown
-    reply = CANNED_RESPONSE;
-    console.log('[public-chat] canned reply for IP:', clientIp);
-  } else {
-    // Real Claude Haiku call
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 80,
-          system: FACTORY_PROMPT,
-          messages: [{ role: 'user', content: message }],
-        }),
-      });
+  const lastBotAt = lastBot && lastBot[0] ? new Date(lastBot[0].created_at).getTime() : 0;
+  const inCooldown = Date.now() - lastBotAt < COOLDOWN_MS;
 
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error('[public-chat] Claude API error:', errText);
-        reply = CANNED_RESPONSE;
-      } else {
-        const data = await res.json();
-        reply = data.content[0].text;
-      }
-    } catch (err) {
-      console.error('[public-chat] Claude call failed:', err.message);
-      reply = CANNED_RESPONSE;
-    }
+  // 2. Hard backstop: never exceed GLOBAL_CAP_PER_MIN bot replies in any minute.
+  const { data: recentBotMsgs } = await supabase
+    .from('public_messages')
+    .select('id')
+    .eq('is_bot', true)
+    .gte('created_at', new Date(Date.now() - 60 * 1000).toISOString());
+  const overGlobalCap = recentBotMsgs && recentBotMsgs.length >= GLOBAL_CAP_PER_MIN;
+
+  // 3. Worth replying? Addressed directly, or win the ambient roll.
+  const wantsReply = isAddressed(message) || Math.random() < AMBIENT_CHANCE;
+
+  if (inCooldown || overGlobalCap || !wantsReply) {
+    // Stay quiet — message is already saved, zero token cost.
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      body: JSON.stringify({ reply: null }),
+    };
   }
 
-  // Save the bot's reply (tagged with same visitor_id so we can track the one-reply limit)
+  // ── Real Claude Haiku call (single message, no history = minimal tokens) ────
+  let reply = null;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system: FACTORY_PROMPT,
+        messages: [{ role: 'user', content: message }],
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('[public-chat] Claude API error:', errText);
+      // On error, stay silent rather than spamming a canned line.
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        body: JSON.stringify({ reply: null }),
+      };
+    }
+
+    const data = await res.json();
+    reply = data.content[0].text;
+  } catch (err) {
+    console.error('[public-chat] Claude call failed:', err.message);
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      body: JSON.stringify({ reply: null }),
+    };
+  }
+
+  // Save the bot's reply
   const { error: botInsertErr } = await supabase.from('public_messages').insert({
     sender_name: 'Unit-7',
     content: reply,
