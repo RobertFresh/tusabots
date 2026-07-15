@@ -64,11 +64,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 @keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .chat-msg-name{font-size:0.7rem;font-weight:600;color:var(--text-muted);letter-spacing:0.02em;padding-left:0.2rem}
 .chat-msg-name.bot-name{color:var(--accent-amber)}
-.chat-msg-bubble{max-width:85%;padding:0.55rem 0.9rem;border-radius:12px;font-size:0.9rem;line-height:1.45;word-wrap:break-word}
+.chat-msg-bubble{max-width:85%;padding:0.55rem 0.9rem;border-radius:12px;font-size:1rem;line-height:1.5;word-wrap:break-word}
 .chat-msg.visitor .chat-msg-bubble{align-self:flex-end;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(74,108,247,0.15));border:1px solid rgba(0,212,255,0.12);color:var(--text-primary)}
 .chat-msg.visitor .chat-msg-name{text-align:right;padding-right:0.2rem}
 .chat-msg.visitor{align-items:flex-end}
-.chat-msg.bot .chat-msg-bubble{align-self:flex-start;background:rgba(212,145,10,0.08);border:1px solid rgba(212,145,10,0.15);color:var(--text-primary);font-family:'Courier New',Courier,monospace;font-size:0.85rem}
+.chat-msg.bot .chat-msg-bubble{align-self:flex-start;background:rgba(212,145,10,0.08);border:1px solid rgba(212,145,10,0.15);color:var(--text-primary);font-size:1rem}
 
 /* Input area */
 .chat-input-area{display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;border-top:1px solid var(--glass-border);flex-shrink:0}
@@ -77,7 +77,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 .robot-head-container{flex-shrink:0;width:44px;height:44px;image-rendering:pixelated}
 .robot-head-canvas{width:44px;height:44px;image-rendering:pixelated;border-radius:6px}
 
-.chat-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:0.6rem 0.85rem;color:var(--text-primary);font-size:0.9rem;font-family:inherit;outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
+.chat-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:0.6rem 0.85rem;color:var(--text-primary);font-size:16px;font-family:inherit;outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
 .chat-input::placeholder{color:var(--text-muted)}
 .chat-input:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(0,212,255,0.1)}
 .chat-send-btn{background:linear-gradient(135deg,var(--accent-amber),var(--accent-rust));border:none;border-radius:10px;padding:0.6rem 1.1rem;color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;transition:transform var(--transition),box-shadow var(--transition);font-family:inherit;flex-shrink:0}
@@ -119,14 +119,22 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:var(--text-muted);font-size:0.75rem;border-top:1px solid var(--glass-border);flex-shrink:0}
 
 @media(max-width:900px){
-  .main-content{padding:62px 0.5rem 0.5rem}
-  .stream-layout{flex-direction:column;max-height:none}
-  .stream-video{flex:0 0 auto;aspect-ratio:16/9;width:100%}
-  .public-chat{flex:1 1 auto;width:100%;min-height:320px}
+  /* Lock the whole view to the real visible viewport height (dvh accounts for
+     the mobile address bar) so video + chat + input all fit with no page scroll. */
+  .main-content{padding:58px 0.5rem 0.5rem;height:100dvh;max-height:100dvh;justify-content:flex-start}
+  .stream-layout{flex-direction:column;max-height:none;height:100%;gap:0.5rem}
+  /* Video: a top band, capped so it never eats the chat. */
+  .stream-video{flex:0 0 auto;aspect-ratio:16/9;width:100%;max-height:34vh}
+  /* Chat fills all remaining height; min-height:0 lets its inner list scroll. */
+  .public-chat{flex:1 1 auto;width:100%;min-height:0}
+  .chat-messages{flex:1 1 auto;min-height:0}
+  .chat-input-area{flex-shrink:0}
   .chat-msg-bubble{max-width:92%}
 }
 @media(max-width:600px){
   nav{padding:0 0.75rem}
+  .chat-header{padding:0.5rem 0.9rem}
+  .chat-messages{padding:0.75rem 0.9rem}
 }
 </style>
 </head>
@@ -164,17 +172,6 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
       Don't have an account?
       <button type="button" id="auth-switch-btn">Sign up</button>
     </p>
-  </div>
-</div>
-
-<!-- Name prompt (shown once for new visitors) -->
-<div class="name-prompt" id="name-prompt" style="display:none">
-  <div class="name-prompt-box">
-    <h3>Enter the factory floor</h3>
-    <p>Pick a name for the group chat</p>
-    <input type="text" id="name-input" placeholder="Visitor" maxlength="20" autocomplete="off">
-    <br>
-    <button id="name-submit">Enter</button>
   </div>
 </div>
 
@@ -459,11 +456,26 @@ window.handleAuthSubmit = async function (e) {
   }
 
   function getVisitorName() {
-    return localStorage.getItem(NAME_KEY) || null;
+    let name = localStorage.getItem(NAME_KEY);
+    if (!name) {
+      name = randomCowboyName();
+      localStorage.setItem(NAME_KEY, name);
+    }
+    return name;
   }
 
-  function setVisitorName(name) {
-    localStorage.setItem(NAME_KEY, name);
+  // Auto-assign a Western/cowboy-movie handle so visitors never see a name prompt.
+  function randomCowboyName() {
+    const NAMES = [
+      'Ringo','Doc Holliday','Wyatt Earp','Django','Josey Wales','Rooster Cogburn',
+      'Blondie','Tuco','Shane','Wild Bill','Jesse James','Butch Cassidy',
+      'Sundance Kid','Cheyenne','Harmonica','Tex','Cole Younger','The Duke',
+      'Maverick','Cassidy','Calamity Jane','Annie Oakley','Billy the Kid',
+      'Buffalo Bill','Marshal Dillon','El Indio','Sartana','Trinity',
+      'Cimarron','Deadwood Dan','Silverado','Cooper','Bronco','Laramie'
+    ];
+    const base = NAMES[Math.floor(Math.random() * NAMES.length)];
+    return base + ' ' + Math.floor(10 + Math.random() * 90);
   }
 
   const visitorId = getVisitorId();
@@ -472,40 +484,13 @@ window.handleAuthSubmit = async function (e) {
   const messagesEl = document.getElementById('chat-messages');
   const inputEl = document.getElementById('chat-input');
   const sendBtn = document.getElementById('chat-send');
-  const namePrompt = document.getElementById('name-prompt');
-  const nameInput = document.getElementById('name-input');
-  const nameSubmitBtn = document.getElementById('name-submit');
 
-  let visitorName = getVisitorName();
+  const visitorName = getVisitorName();  // auto-assigned cowboy name, always set
   let sending = false;
 
-  // ── Name prompt ──────────────────────────────────────────────────────────
-  function showNamePrompt() {
-    namePrompt.style.display = 'flex';
-    nameInput.focus();
-  }
-
-  function confirmName() {
-    const name = nameInput.value.trim().slice(0, 20) || 'Visitor';
-    setVisitorName(name);
-    visitorName = name;
-    namePrompt.style.display = 'none';
-    inputEl.disabled = false;
-    sendBtn.disabled = false;
-    inputEl.focus();
-  }
-
-  nameSubmitBtn.addEventListener('click', confirmName);
-  nameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); confirmName(); }
-  });
-
-  if (!visitorName) {
-    showNamePrompt();
-  } else {
-    inputEl.disabled = false;
-    sendBtn.disabled = false;
-  }
+  // No name prompt any more — chat is usable the moment the page loads.
+  inputEl.disabled = false;
+  sendBtn.disabled = false;
 
   // ── Supabase Realtime ────────────────────────────────────────────────────
   const SUPABASE_URL = window.__SUPABASE_URL__;
