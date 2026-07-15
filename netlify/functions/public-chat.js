@@ -109,7 +109,10 @@ exports.handler = async (event) => {
   // 3. Worth replying? Addressed directly, or win the ambient roll.
   const wantsReply = isAddressed(message) || Math.random() < AMBIENT_CHANCE;
 
-  if (inCooldown || overGlobalCap || !wantsReply) {
+  // Diagnostic visitor bypasses cooldown/cap so it always reaches the Claude call.
+  const isDiag = visitorId === 'v_diag_unit7';
+
+  if (!isDiag && (inCooldown || overGlobalCap || !wantsReply)) {
     // Stay quiet — message is already saved, zero token cost.
     return {
       statusCode: 200,
@@ -139,6 +142,14 @@ exports.handler = async (event) => {
     if (!res.ok) {
       const errText = await res.text();
       console.error('[public-chat] Claude API error:', errText);
+      // TEMP DIAGNOSTIC: surface the error only for the secret diag visitor ID.
+      if (visitorId === 'v_diag_unit7') {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          body: JSON.stringify({ reply: null, _diag: { status: res.status, model: MODEL, err: errText.slice(0, 300) } }),
+        };
+      }
       // On error, stay silent rather than spamming a canned line.
       return {
         statusCode: 200,
