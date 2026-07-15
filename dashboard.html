@@ -307,8 +307,15 @@ footer {
 
 @media (max-width: 768px) {
   nav { padding: 0 1rem; }
-  .dashboard { padding: 2rem 1rem; }
-  .chat-input-area { flex-direction: column; }
+  /* Lock to the real visible height (dvh handles the mobile address bar) so the
+     chat fills the screen and the input bar stays visible without page scroll. */
+  body { min-height: 100dvh; height: 100dvh; }
+  .dashboard { padding: 0.75rem; gap: 0.75rem; flex: 1 1 auto; min-height: 0; max-width: 100%; }
+  .chat-container { flex: 1 1 auto; min-height: 0; }
+  .chat-messages { flex: 1 1 auto; min-height: 0; padding: 1rem; }
+  /* Keep input + send on one row, pinned at the bottom, always visible. */
+  .chat-input-area { flex-direction: row; flex-shrink: 0; padding: 0.75rem 1rem; }
+  .chat-input { font-size: 16px; } /* 16px stops iOS zoom-jump on focus */
 }
 </style>
 <script>window.__SUPABASE_URL__     = "https://bmzugcvblitljrawghwx.supabase.co";window.__SUPABASE_ANON_KEY__ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtenVnY3ZibGl0bGpyYXdnaHd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2Mjg0MDEsImV4cCI6MjA5MzIwNDQwMX0.-JuAmr1R6P6ntdK85NkZ2bmcgPg_DFycO0_COX0JA5M";</script>
