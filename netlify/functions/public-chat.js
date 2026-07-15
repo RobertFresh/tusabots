@@ -112,6 +112,27 @@ exports.handler = async (event) => {
   // Diagnostic visitor bypasses cooldown/cap so it always reaches the Claude call.
   const isDiag = visitorId === 'v_diag_unit7';
 
+  // TEMP: probe multiple model IDs and report which the API key accepts.
+  if (visitorId === 'v_diag_probe') {
+    const candidates = [
+      'claude-3-5-haiku-latest', 'claude-haiku-4-6', 'claude-haiku-4-5',
+      'claude-3-5-haiku-20241022', 'claude-sonnet-4-6', 'claude-sonnet-4-5',
+      'claude-3-5-sonnet-latest', 'claude-3-haiku-20240307'
+    ];
+    const results = {};
+    for (const m of candidates) {
+      try {
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: m, max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] }),
+        });
+        results[m] = r.status;
+      } catch (e) { results[m] = 'ERR'; }
+    }
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders }, body: JSON.stringify({ probe: results }) };
+  }
+
   if (!isDiag && (inCooldown || overGlobalCap || !wantsReply)) {
     // Stay quiet — message is already saved, zero token cost.
     return {
