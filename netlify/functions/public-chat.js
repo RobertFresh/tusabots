@@ -12,7 +12,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // ── Tunable knobs ───────────────────────────────────────────────────────────
-const MODEL = 'claude-3-5-haiku-latest'; // cheap; bump to sonnet only if needed
+const MODEL = 'claude-haiku-4-5';        // cheap; bump to sonnet only if needed
 const COOLDOWN_MS = 45 * 1000;           // min gap between ANY two bot replies
 const AMBIENT_CHANCE = 0.20;             // chance to chime in on an un-addressed msg
 const MAX_TOKENS = 70;                   // Unit-7 speaks in 1-2 short lines
@@ -109,31 +109,7 @@ exports.handler = async (event) => {
   // 3. Worth replying? Addressed directly, or win the ambient roll.
   const wantsReply = isAddressed(message) || Math.random() < AMBIENT_CHANCE;
 
-  // Diagnostic visitor bypasses cooldown/cap so it always reaches the Claude call.
-  const isDiag = visitorId === 'v_diag_unit7';
-
-  // TEMP: probe multiple model IDs and report which the API key accepts.
-  if (visitorId === 'v_diag_probe') {
-    const candidates = [
-      'claude-3-5-haiku-latest', 'claude-haiku-4-6', 'claude-haiku-4-5',
-      'claude-3-5-haiku-20241022', 'claude-sonnet-4-6', 'claude-sonnet-4-5',
-      'claude-3-5-sonnet-latest', 'claude-3-haiku-20240307'
-    ];
-    const results = {};
-    for (const m of candidates) {
-      try {
-        const r = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({ model: m, max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] }),
-        });
-        results[m] = r.status;
-      } catch (e) { results[m] = 'ERR'; }
-    }
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders }, body: JSON.stringify({ probe: results }) };
-  }
-
-  if (!isDiag && (inCooldown || overGlobalCap || !wantsReply)) {
+  if (inCooldown || overGlobalCap || !wantsReply) {
     // Stay quiet — message is already saved, zero token cost.
     return {
       statusCode: 200,
@@ -163,14 +139,6 @@ exports.handler = async (event) => {
     if (!res.ok) {
       const errText = await res.text();
       console.error('[public-chat] Claude API error:', errText);
-      // TEMP DIAGNOSTIC: surface the error only for the secret diag visitor ID.
-      if (visitorId === 'v_diag_unit7') {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          body: JSON.stringify({ reply: null, _diag: { status: res.status, model: MODEL, err: errText.slice(0, 300) } }),
-        };
-      }
       // On error, stay silent rather than spamming a canned line.
       return {
         statusCode: 200,
