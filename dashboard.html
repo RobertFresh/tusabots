@@ -97,25 +97,6 @@ nav {
   gap: 2rem;
 }
 
-.dashboard-header {
-  text-align: center;
-}
-
-.dashboard-header h1 {
-  font-size: clamp(1.5rem, 4vw, 2.2rem);
-  font-weight: 800;
-  background: linear-gradient(135deg, #fff, var(--accent-cyan), var(--accent-blue));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 0.4rem;
-}
-
-.dashboard-header p {
-  color: var(--text-secondary);
-  font-size: 1rem;
-}
-
 /* Chat Area */
 .chat-container {
   flex: 1;
@@ -217,85 +198,6 @@ nav {
 .chat-send-btn:active { transform: translateY(0); }
 .chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-
-/* Workspace bar */
-.workspace-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.workspace-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-right: 0.25rem;
-}
-
-.workspace-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 100px;
-  border: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition);
-  font-family: inherit;
-}
-
-.workspace-pill:hover {
-  border-color: rgba(0, 212, 255, 0.4);
-  color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.06);
-}
-
-.workspace-pill.active {
-  border-color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.1);
-  color: var(--accent-cyan);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
-}
-
-.workspace-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  flex-shrink: 0;
-}
-
-/* Workspace switch toast */
-.workspace-toast {
-  position: fixed;
-  bottom: 1.5rem;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: rgba(0, 212, 255, 0.12);
-  border: 1px solid rgba(0, 212, 255, 0.35);
-  border-radius: 100px;
-  padding: 0.5rem 1.25rem;
-  font-size: 0.85rem;
-  color: var(--accent-cyan);
-  font-weight: 500;
-  opacity: 0;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s;
-  pointer-events: none;
-  z-index: 100;
-}
-
-.workspace-toast.visible {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-}
-
 /* Footer */
 footer {
   text-align: center;
@@ -329,19 +231,7 @@ footer {
   </div>
 </nav>
 
-<div class="workspace-toast" id="workspace-toast"></div>
-
 <main class="dashboard">
-  <!-- Workspace selector bar -->
-  <div class="workspace-bar" id="workspace-bar">
-    <span class="workspace-label">Workspace</span>
-  </div>
-
-  <div class="dashboard-header">
-    <h1>Your TusaBot</h1>
-    <p id="workspace-subtitle">General workspace</p>
-  </div>
-
   <div class="chat-container">
     <div class="chat-messages" id="chat-messages">
       <div class="chat-placeholder" id="chat-placeholder">
@@ -432,69 +322,19 @@ function updateNav(email) {
 </script>
 
 <script>
-// ── Workspace configuration ───────────────────────────────────────────────────
-// Extend this list to add new workspaces.
-const AVAILABLE_WORKSPACES = [
-  { id: 'default',      label: 'General' },
-  { id: 'work',        label: 'Work' },
-  { id: 'personal',    label: 'Personal' },
-  { id: 'tusabot',     label: 'TusaBot' },
-  { id: 'deploy-notes',label: 'Deploy Notes' },
-];
-
-const WORKSPACE_META = {
-  default:      { subtitle: 'General workspace' },
-  work:         { subtitle: 'Work workspace' },
-  personal:     { subtitle: 'Personal workspace' },
-  tusabot:      { subtitle: 'TusaBot workspace' },
-  'deploy-notes':{ subtitle: 'Deploy Notes workspace' },
-};
-
 // ── State ────────────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'tusabots_workspace';
-let currentWorkspace = localStorage.getItem(STORAGE_KEY) || 'default';
+// Workspaces removed — the chat always uses the 'default' (General) workspace,
+// preserving existing history/memory there. Backend contract is unchanged.
+const currentWorkspace = 'default';
 const workspaceHistories = {};
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
-const workspaceBar     = document.getElementById('workspace-bar');
-const workspaceSubtitle = document.getElementById('workspace-subtitle');
 const messagesEl       = document.getElementById('chat-messages');
 const placeholder      = document.getElementById('chat-placeholder');
 const input            = document.getElementById('chat-input');
 const sendBtn          = document.getElementById('chat-send');
-const toastEl          = document.getElementById('workspace-toast');
 
-// ── Build workspace pills ────────────────────────────────────────────────────
-function renderWorkspacePills() {
-  const existing = workspaceBar.querySelectorAll('.workspace-pill');
-  existing.forEach(el => el.remove());
-  AVAILABLE_WORKSPACES.forEach(ws => {
-    const pill = document.createElement('button');
-    pill.className = 'workspace-pill' + (ws.id === currentWorkspace ? ' active' : '');
-    pill.type = 'button';
-    pill.innerHTML = '<span class="workspace-dot"></span>' + ws.label;
-    pill.addEventListener('click', () => switchWorkspace(ws.id));
-    workspaceBar.appendChild(pill);
-  });
-}
-
-// ── Switch workspace ─────────────────────────────────────────────────────────
-async function switchWorkspace(workspaceId) {
-  if (workspaceId === currentWorkspace) return;
-  currentWorkspace = workspaceId;
-  localStorage.setItem(STORAGE_KEY, workspaceId);
-  renderWorkspacePills();
-  workspaceSubtitle.textContent = WORKSPACE_META[workspaceId]?.subtitle || workspaceId;
-  showToast('Switched to ' + workspaceId);
-  messagesEl.innerHTML = '';
-  const ph = document.createElement('div');
-  ph.className = 'chat-placeholder';
-  ph.innerHTML = '<span>🤖 Ready in workspace: ' + workspaceId + '</span>';
-  messagesEl.appendChild(ph);
-  await loadHistoryForWorkspace(workspaceId);
-}
-
-// ── Load history for a workspace (peek mode — no AI call, no message save) ──
+// ── Load history for the chat (peek mode — no AI call, no message save) ──
 async function loadHistoryForWorkspace(workspaceId) {
   try {
     const res = await authFetch('/.netlify/functions/chat', {
@@ -536,21 +376,6 @@ async function sendMessage() {
 
     const data = await res.json();
 
-    if (data.workspaceSwitch) {
-      const newWs = data.workspaceSwitch;
-      localStorage.setItem(STORAGE_KEY, newWs);
-      workspaceSubtitle.textContent = WORKSPACE_META[newWs]?.subtitle || newWs;
-      renderWorkspacePills();
-      showToast('Switched to ' + newWs);
-      messagesEl.innerHTML = '';
-      const ph = document.createElement('div');
-      ph.className = 'chat-placeholder';
-      ph.innerHTML = '<span>🤖 Workspace: ' + newWs + ' — ask me anything</span>';
-      messagesEl.appendChild(ph);
-      workspaceHistories[newWs] = [];
-      return;
-    }
-
     if (data.reply) {
       addBubble(data.reply, 'bot');
       const h = workspaceHistories[currentWorkspace] || [];
@@ -582,21 +407,10 @@ function setInputEnabled(enabled) {
   sendBtn.textContent = enabled ? 'Send' : '...';
 }
 
-function showToast(text) {
-  toastEl.textContent = text;
-  toastEl.classList.add('visible');
-  clearTimeout(toastEl._timer);
-  toastEl._timer = setTimeout(() => toastEl.classList.remove('visible'), 2500);
-}
-
 // ── Init ──────────────────────────────────────────────────────────────────────
-renderWorkspacePills();
-workspaceSubtitle.textContent = WORKSPACE_META[currentWorkspace]?.subtitle || currentWorkspace;
 workspaceHistories[currentWorkspace] = [];
 
 // ── Wire up the input controls ───────────────────────────────────────────────
-// (These listeners were missing — the Send button and Enter key had nothing
-//  connected to them, so messages never sent.)
 sendBtn.addEventListener('click', sendMessage);
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -605,7 +419,7 @@ input.addEventListener('keydown', (e) => {
   }
 });
 
-// Load any saved conversation for the current workspace on page load.
+// Load any saved conversation on page load.
 loadHistoryForWorkspace(currentWorkspace);
 </script>
 
