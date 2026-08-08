@@ -45,13 +45,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 /* Main layout */
 .main-content{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 1rem 1rem;max-width:1400px;width:100%;margin:0 auto}
 
-/* Stream layout: video (left/centre) + chat rail (right) */
-.stream-layout{display:flex;gap:0.85rem;width:100%;flex:1;min-height:0;max-height:calc(100vh - 90px)}
-.stream-video{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;background:#000;border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden}
-.stream-video iframe{width:100%;height:100%;border:0;flex:1}
+/* Chat layout: single centred chat column (Twitch removed — chat is the hero) */
+.stream-layout{display:flex;justify-content:center;gap:0.85rem;width:100%;flex:1;min-height:0;max-height:calc(100vh - 90px)}
 
-/* Chat container — now a narrow rail on the right */
-.public-chat{flex:0 0 300px;width:300px;display:flex;flex-direction:column;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius);min-height:0}
+/* Chat container — now the centred full-height hero (max ~780px for readability) */
+.public-chat{flex:1 1 auto;width:100%;max-width:780px;display:flex;flex-direction:column;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius);min-height:0}
 .chat-header{padding:0.75rem 1.25rem;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:0.5rem;flex-shrink:0}
 .chat-header-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-amber);box-shadow:0 0 6px var(--accent-amber);animation:dotPulse 2s ease-in-out infinite}
 @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -120,13 +118,11 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
 
 @media(max-width:900px){
   /* Lock the whole view to the real visible viewport height (dvh accounts for
-     the mobile address bar) so video + chat + input all fit with no page scroll. */
+     the mobile address bar) so chat + input fit with no page scroll. */
   .main-content{padding:58px 0.5rem 0.5rem;height:100dvh;max-height:100dvh;justify-content:flex-start}
   .stream-layout{flex-direction:column;max-height:none;height:100%;gap:0.5rem}
-  /* Video: a top band, capped so it never eats the chat. */
-  .stream-video{flex:0 0 auto;aspect-ratio:16/9;width:100%;max-height:34vh}
-  /* Chat fills all remaining height; min-height:0 lets its inner list scroll. */
-  .public-chat{flex:1 1 auto;width:100%;min-height:0}
+  /* Chat fills all available height; min-height:0 lets its inner list scroll. */
+  .public-chat{flex:1 1 auto;width:100%;max-width:none;min-height:0}
   .chat-messages{flex:1 1 auto;min-height:0}
   .chat-input-area{flex-shrink:0}
   .chat-msg-bubble{max-width:92%}
@@ -175,16 +171,9 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
   </div>
 </div>
 
-<!-- Main content: stream video + group chat -->
+<!-- Main content: full-page group chat (Twitch removed) -->
 <div class="main-content">
   <div class="stream-layout">
-    <div class="stream-video">
-      <iframe
-        src="https://player.twitch.tv/?channel=mrtwiggbot&parent=tusabots.com&parent=www.tusabots.com&parent=tusabots.netlify.app&muted=false"
-        allowfullscreen
-        title="Live stream">
-      </iframe>
-    </div>
     <div class="public-chat" id="public-chat">
     <div class="chat-header">
       <div class="chat-header-dot"></div>
