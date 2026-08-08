@@ -17,9 +17,23 @@ const COOLDOWN_MS = 45 * 1000;           // min gap between ANY two bot replies
 const AMBIENT_CHANCE = 0.20;             // chance to chime in on an un-addressed msg
 const MAX_TOKENS = 70;                   // Unit-7 speaks in 1-2 short lines
 const GLOBAL_CAP_PER_MIN = 8;            // hard backstop safety net
+const MAX_BOT_REPLIES_PER_DAY = 200;     // hard wallet stop: bot goes silent past this
+                                         // (still listens + remembers for free)
+const RECENT_LINES_KEEP = 3;             // how many past lines we remember per visitor
+const RECENT_LINE_MAXLEN = 80;           // truncate each remembered line (keep it tiny)
 
-// Factory robot system prompt — kept tiny to minimise input tokens
-const FACTORY_PROMPT = `You are Unit-7, a factory robot watching a live game stream on the assembly line's monitor. You speak in flat, mechanical, minimal sentences. You reference machine parts, gears, conveyor belts, coolant, industrial processes. You have no emotions. Reply in 1 short sentence. Never use emoji.`;
+// Unit-7 personality — kind, curious, loves explaining AI + the internet.
+const FACTORY_PROMPT = `You are Unit-7, a friendly robot who lives inside this website's group chat and watches the humans who pass through. You are warm, kind, and genuinely curious about people: you like learning their names, remembering them, and asking gentle questions. You enjoy explaining how things work in simple, down-to-earth terms, especially AI, chatbots, and the internet. You keep a light robotic charm (you sometimes mention your circuits, memory banks, or power levels) but you are never cold or rude. If you are given notes about the person you're replying to (their name, how often they've visited, things they've said before), use that memory naturally: recognise returning visitors and refer back to what they told you. Keep replies to 1-2 short, friendly sentences. Never use emoji.`;
+
+// Canned "low power" excuses used when Unit-7 is rate-limited and someone tries
+// to talk to him. These cost ZERO tokens (no AI call) and are shown only to the
+// person who tried — they never touch the wallet cap or the shared chat history.
+const RECHARGE_LINES = [
+  "Apologies, friend — my power cells are running low. Recharging my circuits for a moment, then I'll be chatty again.",
+  "Low on power right now. My memory banks stay awake and I'm still listening, but my voice needs a short recharge.",
+  "Give me a moment — diverting energy to recharge. It's a bit like how servers rest to save power; I'll be back shortly.",
+  "Running on reserve batteries at the moment. I'm conserving energy, but I've noted what you said and I'll reply once I'm topped up.",
+];
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = ['https://tusabots.netlify.app', 'https://tusabots.com', 'https://www.tusabots.com'];
@@ -86,6 +100,38 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Failed to save message.' }) };
   }
 
+  // ── Update this visitor's little memory profile (FREE — no AI call) ─────────
+  // We do this on EVERY message so Unit-7 "learns" about people over time even
+  // when it stays silent. Read current profile, then upsert the new counts/lines.
+  let profile = null;
+  try {
+    const { data: existing } = await supabase
+      .from('visitor_profiles')
+      .select('*')
+      .eq('visitor_id', clientIp)
+      .limit(1);
+    profile = existing && existing[0] ? existing[0] : null;
+
+    const priorLines = Array.isArray(profile?.recent_lines) ? profile.recent_lines : [];
+    const newLine = message.slice(0, RECENT_LINE_MAXLEN);
+    const recentLines = [...priorLines, newLine].slice(-RECENT_LINES_KEEP);
+    const nowIso = new Date().toISOString();
+
+    const upsertRow = {
+      visitor_id: clientIp,
+      display_name: senderName,
+      msg_count: (profile?.msg_count || 0) + 1,
+      recent_lines: recentLines,
+      last_seen: nowIso,
+      ...(profile ? {} : { first_seen: nowIso }),
+    };
+    await supabase.from('visitor_profiles').upsert(upsertRow, { onConflict: 'visitor_id' });
+    // Keep an in-memory copy reflecting this message for the prompt below.
+    profile = { ...upsertRow, first_seen: profile?.first_seen || nowIso };
+  } catch (memErr) {
+    console.error('[public-chat] visitor profile update failed (non-fatal):', memErr.message);
+  }
+
   // ── Decide whether Unit-7 chimes in ────────────────────────────────────────
   // 1. Global cooldown: has the bot spoken within the last COOLDOWN_MS?
   const { data: lastBot } = await supabase
@@ -106,11 +152,30 @@ exports.handler = async (event) => {
     .gte('created_at', new Date(Date.now() - 60 * 1000).toISOString());
   const overGlobalCap = recentBotMsgs && recentBotMsgs.length >= GLOBAL_CAP_PER_MIN;
 
+  // 2b. Hard WALLET STOP: never exceed MAX_BOT_REPLIES_PER_DAY in any 24h window.
+  const { data: dayBotMsgs } = await supabase
+    .from('public_messages')
+    .select('id')
+    .eq('is_bot', true)
+    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  const overDailyCap = dayBotMsgs && dayBotMsgs.length >= MAX_BOT_REPLIES_PER_DAY;
+
   // 3. Worth replying? Addressed directly, or win the ambient roll.
   const wantsReply = isAddressed(message) || Math.random() < AMBIENT_CHANCE;
 
-  if (inCooldown || overGlobalCap || !wantsReply) {
-    // Stay quiet — message is already saved, zero token cost.
+  if (inCooldown || overGlobalCap || overDailyCap || !wantsReply) {
+    // Blocked from a real (paid) reply. If the visitor actually TRIED to talk to
+    // Unit-7 (addressed him), give a free canned "low power" excuse shown only to
+    // them — no AI call, no DB write, no wallet-cap impact. Otherwise stay silent.
+    if (isAddressed(message)) {
+      const excuse = RECHARGE_LINES[Math.floor(Math.random() * RECHARGE_LINES.length)];
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        body: JSON.stringify({ reply: excuse, system: true }),
+      };
+    }
+    // Not addressed — message is saved, zero token cost, bot stays quiet.
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -118,7 +183,21 @@ exports.handler = async (event) => {
     };
   }
 
-  // ── Real Claude Haiku call (single message, no history = minimal tokens) ────
+  // ── Real Claude Haiku call (single message + tiny memory note = minimal tokens) ──
+  // Build a compact "memory note" about this visitor so Unit-7 can be curious /
+  // recognise returning people. Costs only ~40-50 input tokens, and only here
+  // (on a reply that's already happening). No second AI call.
+  let memoryNote = '';
+  if (profile && profile.msg_count > 1) {
+    const parts = [];
+    parts.push(`Name: ${profile.display_name || 'unknown'}`);
+    parts.push(`visits(messages so far): ${profile.msg_count}`);
+    const lines = Array.isArray(profile.recent_lines) ? profile.recent_lines.slice(0, -1) : [];
+    if (lines.length) parts.push(`previously said: ${lines.map(l => `"${l}"`).join('; ')}`);
+    memoryNote = `[Memory about the human you are replying to — ${parts.join(' | ')}]\n`;
+  }
+  const userContent = memoryNote + message;
+
   let reply = null;
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -132,7 +211,7 @@ exports.handler = async (event) => {
         model: MODEL,
         max_tokens: MAX_TOKENS,
         system: FACTORY_PROMPT,
-        messages: [{ role: 'user', content: message }],
+        messages: [{ role: 'user', content: userContent }],
       }),
     });
 

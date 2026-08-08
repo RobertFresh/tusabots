@@ -574,8 +574,15 @@ window.handleAuthSubmit = async function (e) {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         console.error('[public-chat] send failed:', err);
+      } else {
+        // A "system" reply (e.g. Unit-7's low-power excuse) is NOT saved to the DB
+        // and won't arrive via Realtime, so render it locally for this visitor only.
+        const data = await res.json().catch(() => ({}));
+        if (data && data.system && data.reply) {
+          addMessage({ id: 'sys_' + Date.now(), sender_name: 'Unit-7', content: data.reply, is_bot: true });
+        }
       }
-      // The message + bot reply will arrive via Realtime — no need to render here
+      // Normal messages + real bot replies arrive via Realtime — no render here.
     } catch (e) {
       console.error('[public-chat] send error:', e);
     }
