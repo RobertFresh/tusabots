@@ -72,8 +72,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 .chat-input-area{display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;border-top:1px solid var(--glass-border);flex-shrink:0}
 
 /* Pixel Robot Head */
-.robot-head-container{flex-shrink:0;width:44px;height:44px;image-rendering:pixelated}
-.robot-head-canvas{width:44px;height:44px;image-rendering:pixelated;border-radius:6px}
+.robot-head-container{flex-shrink:0;width:66px;height:66px;image-rendering:pixelated;animation:headFloat 3.2s ease-in-out infinite}
+@keyframes headFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.robot-head-canvas{width:66px;height:66px;image-rendering:pixelated;border-radius:6px;cursor:grab;transform-origin:center center;filter:drop-shadow(0 0 7px rgba(212,145,10,0.55));transition:transform 0.7s cubic-bezier(0.34,1.56,0.64,1),filter var(--transition);-webkit-user-select:none;user-select:none;touch-action:none}
+.robot-head-canvas:hover{filter:drop-shadow(0 0 11px rgba(212,145,10,0.85))}
+.robot-head-canvas.dragging{cursor:grabbing;transition:filter var(--transition)}
 
 .chat-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:0.6rem 0.85rem;color:var(--text-primary);font-size:16px;font-family:inherit;outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
 .chat-input::placeholder{color:var(--text-muted)}
@@ -185,7 +188,7 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
     </div>
     <div class="chat-input-area">
       <div class="robot-head-container">
-        <canvas class="robot-head-canvas" id="robot-canvas" width="44" height="44"></canvas>
+        <canvas class="robot-head-canvas" id="robot-canvas" width="66" height="66"></canvas>
       </div>
       <input type="text" class="chat-input" id="chat-input" placeholder="Say something to Unit-7..." autocomplete="off" maxlength="500" disabled>
       <button class="chat-send-btn" id="chat-send" disabled>Send</button>
@@ -229,8 +232,8 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
 (function(){
   const canvas = document.getElementById('robot-canvas');
   const ctx = canvas.getContext('2d');
-  const W = 44, H = 44;
-  const PX = 4; // pixel size
+  const W = 66, H = 66;
+  const PX = 6; // pixel size
   const COLS = Math.floor(W / PX);
   const ROWS = Math.floor(H / PX);
 
@@ -334,6 +337,53 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
   // Initial draw
   drawHead(HEAD_CLOSED);
   scheduleBlink();
+
+  // ── Interactivity: double-click spins; click-hold + drag rotates with cursor ──
+  let rotation = 0;          // persistent rotation (deg)
+  let dragging = false;
+  let dragStartAngle = 0;    // pointer angle at drag start
+  let rotAtDragStart = 0;    // rotation value at drag start
+  let moved = false;         // did the pointer move enough to count as a drag?
+
+  function angleFromCenter(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI;
+  }
+  function apply() { canvas.style.transform = 'rotate(' + rotation + 'deg)'; }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    dragging = true;
+    moved = false;
+    dragStartAngle = angleFromCenter(e.clientX, e.clientY);
+    rotAtDragStart = rotation;
+    canvas.classList.add('dragging');   // disables the smooth transition so it tracks live
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const delta = angleFromCenter(e.clientX, e.clientY) - dragStartAngle;
+    if (Math.abs(delta) > 2) moved = true;
+    rotation = rotAtDragStart + delta;
+    apply();
+  });
+  function endDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    canvas.classList.remove('dragging'); // restore the springy transition
+    try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+
+  // Double-click: a full 360° spin (skip if it was really the end of a drag).
+  canvas.addEventListener('dblclick', () => {
+    if (moved) return;
+    rotation += 360;
+    apply();
+  });
 })();
 </script>
 
