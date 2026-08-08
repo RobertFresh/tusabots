@@ -534,13 +534,16 @@ window.handleAuthSubmit = async function (e) {
     const { data, error } = await supabase
       .from('public_messages')
       .select('*')
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(50);
     if (error) {
       console.error('[public-chat] load recent failed:', error.message);
       return;
     }
-    (data || []).forEach(addMessage);
+    // Fetch the NEWEST 50 (desc), then reverse so they render oldest->newest.
+    // (Fetching ascending grabbed the OLDEST 50 and hid all recent messages
+    //  once the table grew past 50 rows — the "stuck a month ago" bug.)
+    (data || []).reverse().forEach(addMessage);
   }
 
   // Subscribe to new messages via Realtime
