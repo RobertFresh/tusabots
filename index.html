@@ -17,8 +17,8 @@ window.ENV = {
   --bg-primary:#0a0a0f;
   --bg-secondary:#0d1117;
   --bg-card:rgba(15,20,35,0.6);
-  --accent-cyan:#00d4ff;
-  --accent-blue:#4a6cf7;
+  --accent-cyan:#f5a623;
+  --accent-blue:#c9741f;
   --accent-purple:#7b61ff;
   --accent-green:#00ff88;
   --accent-amber:#d4910a;
@@ -27,8 +27,8 @@ window.ENV = {
   --text-secondary:#8b949e;
   --text-muted:#484f58;
   --glass-bg:rgba(13,17,23,0.7);
-  --glass-border:rgba(0,212,255,0.15);
-  --glow-cyan:0 0 20px rgba(0,212,255,0.3);
+  --glass-border:rgba(245,166,35,0.15);
+  --glow-cyan:0 0 20px rgba(245,166,35,0.3);
   --radius:16px;
   --transition:0.3s cubic-bezier(0.4,0,0.2,1)
 }
@@ -40,7 +40,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,sans-
 nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:var(--glass-bg);border-bottom:1px solid var(--glass-border);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between}
 .nav-logo{font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .nav-login-btn{background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);border-radius:8px;padding:0.4rem 1rem;color:var(--text-secondary);font-size:0.85rem;font-weight:600;cursor:pointer;transition:all var(--transition);font-family:inherit}
-.nav-login-btn:hover{border-color:var(--accent-cyan);color:var(--accent-cyan);background:rgba(0,212,255,0.06)}
+.nav-login-btn:hover{border-color:var(--accent-cyan);color:var(--accent-cyan);background:rgba(245,166,35,0.06)}
 
 /* Main layout */
 .main-content{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 1rem 1rem;max-width:1400px;width:100%;margin:0 auto}
@@ -63,7 +63,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 .chat-msg-name{font-size:0.7rem;font-weight:600;color:var(--text-muted);letter-spacing:0.02em;padding-left:0.2rem}
 .chat-msg-name.bot-name{color:var(--accent-amber)}
 .chat-msg-bubble{max-width:85%;padding:0.55rem 0.9rem;border-radius:12px;font-size:1rem;line-height:1.5;word-wrap:break-word}
-.chat-msg.visitor .chat-msg-bubble{align-self:flex-end;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(74,108,247,0.15));border:1px solid rgba(0,212,255,0.12);color:var(--text-primary)}
+.chat-msg.visitor .chat-msg-bubble{align-self:flex-end;background:linear-gradient(135deg,rgba(245,166,35,0.15),rgba(201,116,31,0.15));border:1px solid rgba(245,166,35,0.12);color:var(--text-primary)}
 .chat-msg.visitor .chat-msg-name{text-align:right;padding-right:0.2rem}
 .chat-msg.visitor{align-items:flex-end}
 .chat-msg.bot .chat-msg-bubble{align-self:flex-start;background:rgba(212,145,10,0.08);border:1px solid rgba(212,145,10,0.15);color:var(--text-primary);font-size:1rem}
@@ -80,7 +80,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 
 .chat-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:0.6rem 0.85rem;color:var(--text-primary);font-size:16px;font-family:inherit;outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
 .chat-input::placeholder{color:var(--text-muted)}
-.chat-input:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(0,212,255,0.1)}
+.chat-input:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(245,166,35,0.1)}
 .chat-send-btn{background:linear-gradient(135deg,var(--accent-amber),var(--accent-rust));border:none;border-radius:10px;padding:0.6rem 1.1rem;color:#fff;font-size:0.85rem;font-weight:600;cursor:pointer;transition:transform var(--transition),box-shadow var(--transition);font-family:inherit;flex-shrink:0}
 .chat-send-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 0 12px rgba(212,145,10,0.3)}
 .chat-send-btn:disabled{opacity:0.4;cursor:not-allowed}
@@ -100,7 +100,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 .auth-form label{font-size:0.8rem;font-weight:600;color:var(--text-secondary);letter-spacing:0.05em;text-transform:uppercase}
 .auth-form input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:0.75rem 1rem;color:var(--text-primary);font-size:0.95rem;font-family:inherit;outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
 .auth-form input::placeholder{color:var(--text-muted)}
-.auth-form input:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(0,212,255,0.1)}
+.auth-form input:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(245,166,35,0.1)}
 .auth-submit-btn{margin-top:0.5rem;width:100%;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));border:none;border-radius:10px;padding:0.85rem;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:transform var(--transition),box-shadow var(--transition),opacity var(--transition);font-family:inherit}
 .auth-submit-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:var(--glow-cyan)}
 .auth-submit-btn:disabled{opacity:0.5;cursor:not-allowed}
@@ -199,31 +199,58 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
 
 <footer><p>TusaBots 2026</p></footer>
 
-<!-- Particle background (preserved from original) -->
+<!-- Circuit-board background (factory-cyber theme; amber PCB traces + travelling pulses) -->
 <script>
 (function(){
-  var canvas=document.getElementById("bg-canvas"),ctx=canvas.getContext("2d"),particles=[],P=40;
-  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
-  resize();window.addEventListener("resize",resize);
-  function Particle(){this.reset()}
-  Particle.prototype.reset=function(){
-    this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;
-    this.size=Math.random()*2+0.5;this.speedX=(Math.random()-0.5)*0.2;this.speedY=(Math.random()-0.5)*0.2;this.opacity=Math.random()*0.3+0.05;
-  };
-  Particle.prototype.update=function(){
-    this.x+=this.speedX;this.y+=this.speedY;
-    if(this.x<0||this.x>canvas.width||this.y<0||this.y>canvas.height)this.reset();
-  };
-  Particle.prototype.draw=function(){
-    ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
-    ctx.fillStyle="rgba(212,145,10,"+this.opacity+")";ctx.fill();
-  };
-  for(var i=0;i<P;i++){particles.push(new Particle());}
-  function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);
-    for(var i=0;i<particles.length;i++){particles[i].update();particles[i].draw();}
-    requestAnimationFrame(animate);
+  var canvas=document.getElementById("bg-canvas"),ctx=canvas.getContext("2d");
+  var traces=[],nodes=[],pulses=[],dust=[],GRID=64;
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;build();}
+  // Build a right-angle PCB trace network snapped to a grid (static geometry).
+  function build(){
+    traces=[];nodes=[];pulses=[];dust=[];
+    var cols=Math.ceil(canvas.width/GRID)+1,rows=Math.ceil(canvas.height/GRID)+1;
+    var wantTraces=Math.min(46,Math.floor(cols*rows*0.05)+10);
+    for(var t=0;t<wantTraces;t++){
+      var cx=Math.floor(Math.random()*cols),cy=Math.floor(Math.random()*rows);
+      var pts=[[cx*GRID,cy*GRID]],segs=2+Math.floor(Math.random()*3);
+      for(var s=0;s<segs;s++){
+        var len=(1+Math.floor(Math.random()*3))*GRID;
+        if(Math.random()<0.5){cx+=(Math.random()<0.5?-1:1)*(len/GRID);}
+        else{cy+=(Math.random()<0.5?-1:1)*(len/GRID);}
+        cx=Math.max(0,Math.min(cols,cx));cy=Math.max(0,Math.min(rows,cy));
+        pts.push([cx*GRID,cy*GRID]);
+      }
+      traces.push(pts);
+      nodes.push([pts[0][0],pts[0][1]]);
+      nodes.push([pts[pts.length-1][0],pts[pts.length-1][1]]);
+      if(Math.random()<0.7)pulses.push({trace:t,seg:0,t:Math.random(),speed:0.004+Math.random()*0.006});
+    }
+    for(var d=0;d<28;d++)dust.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,
+      sx:(Math.random()-0.5)*0.15,sy:(Math.random()-0.5)*0.15,r:Math.random()*1.6+0.4,o:Math.random()*0.25+0.05});
   }
-  animate();
+  function drawTraces(){
+    ctx.lineWidth=1;ctx.strokeStyle="rgba(212,145,10,0.10)";
+    for(var i=0;i<traces.length;i++){var p=traces[i];ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);
+      for(var j=1;j<p.length;j++)ctx.lineTo(p[j][0],p[j][1]);ctx.stroke();}
+    for(var n=0;n<nodes.length;n++){ctx.beginPath();ctx.arc(nodes[n][0],nodes[n][1],1.8,0,Math.PI*2);
+      ctx.fillStyle="rgba(212,145,10,0.28)";ctx.fill();}
+  }
+  function drawPulses(){
+    for(var i=0;i<pulses.length;i++){var pu=pulses[i],p=traces[pu.trace];if(!p||p.length<2)continue;
+      pu.t+=pu.speed;if(pu.t>=1){pu.t=0;pu.seg=(pu.seg+1)%(p.length-1);}
+      var a=p[pu.seg],b=p[pu.seg+1];if(!b)continue;
+      var x=a[0]+(b[0]-a[0])*pu.t,y=a[1]+(b[1]-a[1])*pu.t;
+      var g=ctx.createRadialGradient(x,y,0,x,y,7);
+      g.addColorStop(0,"rgba(245,166,35,0.9)");g.addColorStop(1,"rgba(245,166,35,0)");
+      ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();}
+  }
+  function drawDust(){
+    for(var i=0;i<dust.length;i++){var d=dust[i];d.x+=d.sx;d.y+=d.sy;
+      if(d.x<0||d.x>canvas.width||d.y<0||d.y>canvas.height){d.x=Math.random()*canvas.width;d.y=Math.random()*canvas.height;}
+      ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,Math.PI*2);ctx.fillStyle="rgba(212,145,10,"+d.o+")";ctx.fill();}
+  }
+  function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);drawTraces();drawDust();drawPulses();requestAnimationFrame(animate);}
+  resize();window.addEventListener("resize",resize);animate();
 })();
 </script>
 
