@@ -71,12 +71,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 /* Input area */
 .chat-input-area{display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;border-top:1px solid var(--glass-border);flex-shrink:0}
 
-/* Pixel Robot Head */
-.robot-head-container{flex-shrink:0;width:66px;height:66px;image-rendering:pixelated;animation:headFloat 3.2s ease-in-out infinite}
-@keyframes headFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-.robot-head-canvas{width:66px;height:66px;image-rendering:pixelated;border-radius:6px;cursor:grab;transform-origin:center center;filter:drop-shadow(0 0 7px rgba(212,145,10,0.55));transition:transform 0.7s cubic-bezier(0.34,1.56,0.64,1),filter var(--transition);-webkit-user-select:none;user-select:none;touch-action:none}
-.robot-head-canvas:hover{filter:drop-shadow(0 0 11px rgba(212,145,10,0.85))}
-.robot-head-canvas.dragging{cursor:grabbing;transition:filter var(--transition)}
+/* Massive themed robot head (adapted from the Tusabot prototype) */
+.robot-hero{flex:0 0 auto;display:flex;justify-content:center;align-items:flex-end;width:100%;margin-bottom:0.4rem;pointer-events:none}
+.robot-svg{width:clamp(150px,32vw,300px);height:auto;cursor:grab;transform-origin:center center;pointer-events:auto;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.55));transition:transform 0.7s cubic-bezier(0.34,1.56,0.64,1);animation:headFloat 4s ease-in-out infinite;-webkit-user-select:none;user-select:none;touch-action:none}
+.robot-svg.dragging{cursor:grabbing;transition:none}
+@keyframes headFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.robot-glow{filter:drop-shadow(0 0 4px var(--accent-amber)) drop-shadow(0 0 8px rgba(245,166,35,0.7))}
+@media (max-width:900px){.robot-svg{width:clamp(120px,34vw,220px)}}
 
 .chat-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:0.6rem 0.85rem;color:var(--text-primary);font-size:16px;font-family:inherit;outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
 .chat-input::placeholder{color:var(--text-muted)}
@@ -176,6 +177,73 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
 
 <!-- Main content: full-page group chat (Twitch removed) -->
 <div class="main-content">
+  <div class="robot-hero">
+    <svg class="robot-svg" id="robot-svg" viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Unit-7 the front-desk robot">
+      <defs>
+        <radialGradient id="headGrad" cx="38%" cy="32%" r="75%">
+          <stop offset="0%" stop-color="#4a3a28"/>
+          <stop offset="45%" stop-color="#2a2018"/>
+          <stop offset="100%" stop-color="#14100b"/>
+        </radialGradient>
+        <linearGradient id="domeGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3a2c1c"/>
+          <stop offset="100%" stop-color="#1c150e"/>
+        </linearGradient>
+        <linearGradient id="neckGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2a2018"/>
+          <stop offset="100%" stop-color="#120d08"/>
+        </linearGradient>
+        <radialGradient id="faceGrad" cx="50%" cy="45%" r="60%">
+          <stop offset="0%" stop-color="#0a0806"/>
+          <stop offset="100%" stop-color="#000000"/>
+        </radialGradient>
+      </defs>
+
+      <!-- Antennae (V-shape with ball tips) -->
+      <g stroke="#c9741f" stroke-width="3" stroke-linecap="round">
+        <line x1="82" y1="34" x2="66" y2="8"/>
+        <line x1="118" y1="34" x2="134" y2="8"/>
+      </g>
+      <circle cx="66" cy="8" r="6" fill="#f5a623" class="robot-glow"/>
+      <circle cx="134" cy="8" r="6" fill="#f5a623" class="robot-glow"/>
+
+      <!-- Segmented neck behind head -->
+      <g>
+        <rect x="80" y="170" width="40" height="60" rx="8" fill="url(#neckGrad)"/>
+        <rect x="80" y="182" width="40" height="4" fill="#3a2c1c" opacity="0.7"/>
+        <rect x="80" y="196" width="40" height="4" fill="#3a2c1c" opacity="0.7"/>
+        <rect x="80" y="210" width="40" height="4" fill="#3a2c1c" opacity="0.7"/>
+      </g>
+
+      <!-- Side ears -->
+      <ellipse cx="28" cy="118" rx="12" ry="20" fill="#2a2018" stroke="#3a2c1c" stroke-width="2"/>
+      <ellipse cx="172" cy="118" rx="12" ry="20" fill="#2a2018" stroke="#3a2c1c" stroke-width="2"/>
+      <ellipse cx="28" cy="118" rx="5" ry="11" fill="#c9741f" opacity="0.5"/>
+      <ellipse cx="172" cy="118" rx="5" ry="11" fill="#c9741f" opacity="0.5"/>
+
+      <!-- Main head sphere -->
+      <circle cx="100" cy="112" r="72" fill="url(#headGrad)" stroke="#3a2c1c" stroke-width="2"/>
+
+      <!-- Dome cap over the top ~35% -->
+      <path d="M 34 96 A 72 72 0 0 1 166 96 A 66 40 0 0 0 34 96 Z" fill="url(#domeGrad)" stroke="#3a2c1c" stroke-width="1.5"/>
+      <path d="M 40 92 A 62 62 0 0 1 160 92" fill="none" stroke="#5a4326" stroke-width="1.5" opacity="0.6"/>
+
+      <!-- Recessed dark face screen -->
+      <ellipse cx="100" cy="120" rx="52" ry="48" fill="url(#faceGrad)"/>
+
+      <!-- Glowing amber eyes -->
+      <g class="robot-glow" fill="#f5a623">
+        <ellipse id="eye-l" cx="80" cy="106" rx="11" ry="7"/>
+        <ellipse id="eye-r" cx="120" cy="106" rx="11" ry="7"/>
+      </g>
+
+      <!-- Glowing amber mouth (animated) -->
+      <path id="robot-mouth" class="robot-glow" d="M 82 138 Q 100 150 118 138" fill="none" stroke="#f5a623" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- Chest badge hint on the neck -->
+      <rect x="92" y="216" width="16" height="10" rx="2" fill="#c9741f" opacity="0.35"/>
+    </svg>
+  </div>
   <div class="stream-layout">
     <div class="public-chat" id="public-chat">
     <div class="chat-header">
@@ -187,9 +255,6 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
       <!-- Messages rendered here -->
     </div>
     <div class="chat-input-area">
-      <div class="robot-head-container">
-        <canvas class="robot-head-canvas" id="robot-canvas" width="66" height="66"></canvas>
-      </div>
       <input type="text" class="chat-input" id="chat-input" placeholder="Say something to Unit-7..." autocomplete="off" maxlength="500" disabled>
       <button class="chat-send-btn" id="chat-send" disabled>Send</button>
     </div>
@@ -304,139 +369,68 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
 <!-- Pixel Robot Head rendering -->
 <script>
 (function(){
-  const canvas = document.getElementById('robot-canvas');
-  const ctx = canvas.getContext('2d');
-  const W = 66, H = 66;
-  const PX = 6; // pixel size
-  const COLS = Math.floor(W / PX);
-  const ROWS = Math.floor(H / PX);
+  const svg = document.getElementById('robot-svg');
+  const mouth = document.getElementById('robot-mouth');
+  const eyeL = document.getElementById('eye-l');
+  const eyeR = document.getElementById('eye-r');
+  if (!svg || !mouth) return;
 
-  // Colours
-  const C = {
-    bg:    '#0000',
-    metal: '#3a3a3a',
-    dark:  '#2a2a2a',
-    eye:   '#d4910a',
-    eyeOff:'#6b4a0a',
-    mouth: '#d4910a',
-    led:   '#4aff4a',
-    rivet: '#555',
-    rust:  '#5a3a1a',
-  };
+  // Mouth shapes (SVG path d-attributes). Closed = gentle smile; open frames
+  // = speaking. We cycle through the open frames while talking.
+  const MOUTH_SMILE = 'M 82 138 Q 100 150 118 138';                 // resting smile
+  const MOUTH_OPEN  = 'M 84 134 Q 100 162 116 134 Q 100 150 84 134';// wide open oval
+  const MOUTH_MID   = 'M 84 137 Q 100 150 116 137 Q 100 144 84 137';// half open
+  const TALK_FRAMES = [MOUTH_OPEN, MOUTH_MID, MOUTH_SMILE, MOUTH_MID];
 
-  // 11x11 pixel grid for the robot head
-  // 0=transparent, 1=metal, 2=dark, 3=eye, 4=mouth-closed, 5=led, 6=rivet, 7=rust
-  const HEAD_CLOSED = [
-    [0,0,0,0,0,5,0,0,0,0,0],
-    [0,0,0,0,0,2,0,0,0,0,0],
-    [0,0,1,1,1,1,1,1,1,0,0],
-    [0,1,6,1,1,1,1,1,6,1,0],
-    [0,1,1,3,1,1,1,3,1,1,0],
-    [0,1,1,3,1,1,1,3,1,1,0],
-    [0,1,1,1,1,1,1,1,1,1,0],
-    [0,1,1,1,4,4,4,1,1,1,0],
-    [0,1,7,1,1,1,1,1,7,1,0],
-    [0,0,1,1,1,1,1,1,1,0,0],
-    [0,0,0,2,2,2,2,2,0,0,0],
-  ];
-
-  const HEAD_OPEN = [
-    [0,0,0,0,0,5,0,0,0,0,0],
-    [0,0,0,0,0,2,0,0,0,0,0],
-    [0,0,1,1,1,1,1,1,1,0,0],
-    [0,1,6,1,1,1,1,1,6,1,0],
-    [0,1,1,3,1,1,1,3,1,1,0],
-    [0,1,1,3,1,1,1,3,1,1,0],
-    [0,1,1,1,1,1,1,1,1,1,0],
-    [0,1,1,4,0,0,0,4,1,1,0],
-    [0,1,7,1,4,4,4,1,7,1,0],
-    [0,0,1,1,1,1,1,1,1,0,0],
-    [0,0,0,2,2,2,2,2,0,0,0],
-  ];
-
-  const colorMap = { 0:C.bg, 1:C.metal, 2:C.dark, 3:C.eye, 4:C.mouth, 5:C.led, 6:C.rivet, 7:C.rust };
-
-  function drawHead(grid) {
-    ctx.clearRect(0, 0, W, H);
-    for (let r = 0; r < grid.length; r++) {
-      for (let c = 0; c < grid[r].length; c++) {
-        const val = grid[r][c];
-        if (val === 0) continue;
-        ctx.fillStyle = colorMap[val];
-        ctx.fillRect(c * PX, r * PX, PX, PX);
-      }
-    }
-  }
-
-  // State
-  let talking = false;
-  let mouthOpen = false;
-  let talkInterval = null;
-  let blinkTimeout = null;
+  let talking = false, talkTimer = null, frame = 0, blinkTimeout = null;
 
   function startTalking() {
     if (talking) return;
-    talking = true;
-    mouthOpen = false;
-    talkInterval = setInterval(() => {
-      mouthOpen = !mouthOpen;
-      drawHead(mouthOpen ? HEAD_OPEN : HEAD_CLOSED);
-    }, 150);
+    talking = true; frame = 0;
+    talkTimer = setInterval(() => {
+      mouth.setAttribute('d', TALK_FRAMES[frame % TALK_FRAMES.length]);
+      frame++;
+    }, 130);
   }
-
   function stopTalking() {
     talking = false;
-    clearInterval(talkInterval);
-    talkInterval = null;
-    drawHead(HEAD_CLOSED);
+    clearInterval(talkTimer); talkTimer = null;
+    mouth.setAttribute('d', MOUTH_SMILE);
   }
 
-  // Idle blink every 3-5s
+  // Idle blink: squash the eyes briefly every 3-5s (skip while talking).
   function scheduleBlink() {
     const delay = 3000 + Math.random() * 2000;
     blinkTimeout = setTimeout(() => {
-      if (!talking) {
-        // Quick blink: eyes off then on
-        const blinked = HEAD_CLOSED.map(row => row.map(v => v === 3 ? 1 : v));
-        drawHead(blinked);
-        setTimeout(() => { if (!talking) drawHead(HEAD_CLOSED); }, 120);
+      if (!talking && eyeL && eyeR) {
+        eyeL.setAttribute('ry', '1'); eyeR.setAttribute('ry', '1');
+        setTimeout(() => { eyeL.setAttribute('ry', '7'); eyeR.setAttribute('ry', '7'); }, 120);
       }
       scheduleBlink();
     }, delay);
   }
-
-  // Expose for chat logic
-  window.robotHead = { startTalking, stopTalking };
-
-  // Initial draw
-  drawHead(HEAD_CLOSED);
   scheduleBlink();
 
-  // ── Interactivity: double-click spins; click-hold + drag rotates with cursor ──
-  let rotation = 0;          // persistent rotation (deg)
-  let dragging = false;
-  let dragStartAngle = 0;    // pointer angle at drag start
-  let rotAtDragStart = 0;    // rotation value at drag start
-  let moved = false;         // did the pointer move enough to count as a drag?
+  // Expose for chat logic (unchanged contract: startTalking / stopTalking)
+  window.robotHead = { startTalking, stopTalking };
 
-  function angleFromCenter(clientX, clientY) {
-    const rect = canvas.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI;
+  // ── Interactivity: double-click spins 360; click-hold + drag rotates ──
+  let rotation = 0, dragging = false, dragStartAngle = 0, rotAtDragStart = 0, moved = false;
+  function angleFromCenter(x, y) {
+    const rect = svg.getBoundingClientRect();
+    return Math.atan2(y - (rect.top + rect.height/2), x - (rect.left + rect.width/2)) * 180 / Math.PI;
   }
-  function apply() { canvas.style.transform = 'rotate(' + rotation + 'deg)'; }
+  function apply() { svg.style.transform = 'rotate(' + rotation + 'deg)'; }
 
-  canvas.addEventListener('pointerdown', (e) => {
+  svg.addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    dragging = true;
-    moved = false;
+    dragging = true; moved = false;
     dragStartAngle = angleFromCenter(e.clientX, e.clientY);
     rotAtDragStart = rotation;
-    canvas.classList.add('dragging');   // disables the smooth transition so it tracks live
-    canvas.setPointerCapture(e.pointerId);
+    svg.classList.add('dragging');
+    try { svg.setPointerCapture(e.pointerId); } catch (_) {}
   });
-  canvas.addEventListener('pointermove', (e) => {
+  svg.addEventListener('pointermove', (e) => {
     if (!dragging) return;
     const delta = angleFromCenter(e.clientX, e.clientY) - dragStartAngle;
     if (Math.abs(delta) > 2) moved = true;
@@ -446,18 +440,12 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
   function endDrag(e) {
     if (!dragging) return;
     dragging = false;
-    canvas.classList.remove('dragging'); // restore the springy transition
-    try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+    svg.classList.remove('dragging');
+    try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
   }
-  canvas.addEventListener('pointerup', endDrag);
-  canvas.addEventListener('pointercancel', endDrag);
-
-  // Double-click: a full 360° spin (skip if it was really the end of a drag).
-  canvas.addEventListener('dblclick', () => {
-    if (moved) return;
-    rotation += 360;
-    apply();
-  });
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
+  svg.addEventListener('dblclick', () => { if (moved) return; rotation += 360; apply(); });
 })();
 </script>
 
