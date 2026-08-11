@@ -14,7 +14,7 @@ window.ENV = {
 <title>TusaBots</title>
 <style>
 :root{
-  --bg-primary:#0a0a0f;
+  --bg-primary:#140f0a;
   --bg-secondary:#0d1117;
   --bg-card:rgba(15,20,35,0.6);
   --accent-cyan:#f5a623;
@@ -199,57 +199,93 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
 
 <footer><p>TusaBots 2026</p></footer>
 
-<!-- Circuit-board background (factory-cyber theme; amber PCB traces + travelling pulses) -->
+<!-- Dusty warehouse-lobby background (factory-lobby theme; perspective hall + god rays + drifting dust) -->
 <script>
 (function(){
   var canvas=document.getElementById("bg-canvas"),ctx=canvas.getContext("2d");
-  var traces=[],nodes=[],pulses=[],dust=[],GRID=64;
-  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;build();}
-  // Build a right-angle PCB trace network snapped to a grid (static geometry).
+  // ---- tunable knobs (one number each) ----
+  var DUST_COUNT=90;     // floating dust motes
+  var RAY_COUNT=3;       // vertical god-ray light shafts
+  var RAY_OPACITY=0.07;  // brightness of a shaft
+  var LIGHT_COUNT=14;    // distant flickering fixtures near the horizon
+  var HAZE=0.55;         // strength of vanishing-point glow + edge vignette
+  var FLOOR_LINES=14;    // perspective floor lines fanning from the vanishing point
+  // -----------------------------------------
+  var dust=[],lights=[],rays=[],W=0,H=0,vpX=0,horizonY=0,frame=0;
+  function rand(a,b){return a+Math.random()*(b-a);}
   function build(){
-    traces=[];nodes=[];pulses=[];dust=[];
-    var cols=Math.ceil(canvas.width/GRID)+1,rows=Math.ceil(canvas.height/GRID)+1;
-    var wantTraces=Math.min(46,Math.floor(cols*rows*0.05)+10);
-    for(var t=0;t<wantTraces;t++){
-      var cx=Math.floor(Math.random()*cols),cy=Math.floor(Math.random()*rows);
-      var pts=[[cx*GRID,cy*GRID]],segs=2+Math.floor(Math.random()*3);
-      for(var s=0;s<segs;s++){
-        var len=(1+Math.floor(Math.random()*3))*GRID;
-        if(Math.random()<0.5){cx+=(Math.random()<0.5?-1:1)*(len/GRID);}
-        else{cy+=(Math.random()<0.5?-1:1)*(len/GRID);}
-        cx=Math.max(0,Math.min(cols,cx));cy=Math.max(0,Math.min(rows,cy));
-        pts.push([cx*GRID,cy*GRID]);
-      }
-      traces.push(pts);
-      nodes.push([pts[0][0],pts[0][1]]);
-      nodes.push([pts[pts.length-1][0],pts[pts.length-1][1]]);
-      if(Math.random()<0.7)pulses.push({trace:t,seg:0,t:Math.random(),speed:0.004+Math.random()*0.006});
-    }
-    for(var d=0;d<28;d++)dust.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,
-      sx:(Math.random()-0.5)*0.15,sy:(Math.random()-0.5)*0.15,r:Math.random()*1.6+0.4,o:Math.random()*0.25+0.05});
+    W=canvas.width;H=canvas.height;vpX=W*0.5;horizonY=H*0.52;
+    dust=[];lights=[];rays=[];
+    for(var i=0;i<DUST_COUNT;i++)dust.push({x:Math.random()*W,y:Math.random()*H,
+      sx:rand(-0.12,0.12),sy:rand(-0.28,-0.03),r:rand(0.4,2.0),o:rand(0.04,0.32)});
+    for(var l=0;l<LIGHT_COUNT;l++)lights.push({x:rand(W*0.12,W*0.88),
+      y:horizonY+rand(-H*0.16,H*0.05),base:rand(0.12,0.45),r:rand(1.2,3.2),
+      ph:Math.random()*6.28,sp:rand(0.012,0.05)});
+    for(var g=0;g<RAY_COUNT;g++)rays.push({x:rand(W*0.15,W*0.85),w:rand(W*0.05,W*0.13),
+      ph:Math.random()*6.28,sp:rand(0.004,0.009)});
   }
-  function drawTraces(){
-    ctx.lineWidth=1;ctx.strokeStyle="rgba(212,145,10,0.10)";
-    for(var i=0;i<traces.length;i++){var p=traces[i];ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);
-      for(var j=1;j<p.length;j++)ctx.lineTo(p[j][0],p[j][1]);ctx.stroke();}
-    for(var n=0;n<nodes.length;n++){ctx.beginPath();ctx.arc(nodes[n][0],nodes[n][1],1.8,0,Math.PI*2);
-      ctx.fillStyle="rgba(212,145,10,0.28)";ctx.fill();}
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;build();}
+  function drawBase(){
+    var g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,"#140f0a");g.addColorStop(0.5,"#1a1410");g.addColorStop(1,"#0d0906");
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   }
-  function drawPulses(){
-    for(var i=0;i<pulses.length;i++){var pu=pulses[i],p=traces[pu.trace];if(!p||p.length<2)continue;
-      pu.t+=pu.speed;if(pu.t>=1){pu.t=0;pu.seg=(pu.seg+1)%(p.length-1);}
-      var a=p[pu.seg],b=p[pu.seg+1];if(!b)continue;
-      var x=a[0]+(b[0]-a[0])*pu.t,y=a[1]+(b[1]-a[1])*pu.t;
-      var g=ctx.createRadialGradient(x,y,0,x,y,7);
-      g.addColorStop(0,"rgba(245,166,35,0.9)");g.addColorStop(1,"rgba(245,166,35,0)");
-      ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();}
+  function drawStructure(){
+    // perspective floor lines fanning from the vanishing point down to the bottom edge
+    ctx.strokeStyle="rgba(212,145,10,0.05)";ctx.lineWidth=1;
+    var i;
+    for(i=0;i<=FLOOR_LINES;i++){var fx=(i/FLOOR_LINES)*W;
+      ctx.beginPath();ctx.moveTo(vpX,horizonY);ctx.lineTo(fx,H);ctx.stroke();}
+    // receding horizontal floor lines (bunch up near the horizon)
+    for(i=1;i<=8;i++){var t=i/8,y=horizonY+(H-horizonY)*(t*t);
+      ctx.globalAlpha=0.5*(1-t*0.4);
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.globalAlpha=1;
+    // tall wall girders left & right, fading toward the centre
+    for(i=0;i<5;i++){var a=0.06*(1-i/5);
+      ctx.strokeStyle="rgba(184,115,51,"+a+")";
+      var lx=(i/5)*W*0.30;ctx.beginPath();ctx.moveTo(lx,0);ctx.lineTo(lx,horizonY);ctx.stroke();
+      var rx=W-(i/5)*W*0.30;ctx.beginPath();ctx.moveTo(rx,0);ctx.lineTo(rx,horizonY);ctx.stroke();}
+  }
+  function drawRays(){
+    ctx.globalCompositeOperation="lighter";
+    for(var i=0;i<rays.length;i++){var r=rays[i];
+      var o=RAY_OPACITY*(0.65+0.35*Math.sin(frame*r.sp+r.ph));
+      var g=ctx.createLinearGradient(r.x,0,r.x,H*0.85);
+      g.addColorStop(0,"rgba(255,179,102,"+o+")");g.addColorStop(1,"rgba(255,179,102,0)");
+      ctx.fillStyle=g;ctx.beginPath();
+      ctx.moveTo(r.x-r.w/2,0);ctx.lineTo(r.x+r.w/2,0);
+      ctx.lineTo(r.x+r.w*0.9,H*0.85);ctx.lineTo(r.x-r.w*1.1,H*0.85);
+      ctx.closePath();ctx.fill();}
+    ctx.globalCompositeOperation="source-over";
+  }
+  function drawLights(){
+    ctx.globalCompositeOperation="lighter";
+    for(var i=0;i<lights.length;i++){var L=lights[i];
+      var o=L.base*(0.45+0.55*Math.sin(frame*L.sp+L.ph));
+      var g=ctx.createRadialGradient(L.x,L.y,0,L.x,L.y,L.r*4);
+      g.addColorStop(0,"rgba(255,166,60,"+o+")");g.addColorStop(1,"rgba(255,166,60,0)");
+      ctx.beginPath();ctx.arc(L.x,L.y,L.r*4,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();}
+    ctx.globalCompositeOperation="source-over";
   }
   function drawDust(){
     for(var i=0;i<dust.length;i++){var d=dust[i];d.x+=d.sx;d.y+=d.sy;
-      if(d.x<0||d.x>canvas.width||d.y<0||d.y>canvas.height){d.x=Math.random()*canvas.width;d.y=Math.random()*canvas.height;}
-      ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,Math.PI*2);ctx.fillStyle="rgba(212,145,10,"+d.o+")";ctx.fill();}
+      if(d.y<-5){d.y=H+5;d.x=Math.random()*W;}
+      if(d.x<-5)d.x=W+5;else if(d.x>W+5)d.x=-5;
+      ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+      ctx.fillStyle="rgba(222,180,120,"+d.o+")";ctx.fill();}
   }
-  function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);drawTraces();drawDust();drawPulses();requestAnimationFrame(animate);}
+  function drawHaze(){
+    var vg=ctx.createRadialGradient(vpX,horizonY,0,vpX,horizonY,H*0.6);
+    vg.addColorStop(0,"rgba(120,70,25,"+(0.25*HAZE)+")");vg.addColorStop(1,"rgba(120,70,25,0)");
+    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+    var eg=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);
+    eg.addColorStop(0,"rgba(0,0,0,0)");eg.addColorStop(1,"rgba(0,0,0,"+(0.6*HAZE)+")");
+    ctx.fillStyle=eg;ctx.fillRect(0,0,W,H);
+  }
+  function animate(){frame++;
+    drawBase();drawStructure();drawRays();drawLights();drawDust();drawHaze();
+    requestAnimationFrame(animate);}
   resize();window.addEventListener("resize",resize);animate();
 })();
 </script>
