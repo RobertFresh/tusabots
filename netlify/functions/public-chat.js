@@ -88,6 +88,26 @@ exports.handler = async (event) => {
 
   const clientIp = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown').split(',')[0].trim();
 
+  // ── Anti-flood: throttle inserts per IP (protects the DB + Netlify invocations) ──
+  // The Claude wallet is already guarded below, but the visitor-message INSERT and
+  // profile upsert happen for free on every request. Without this, a script could
+  // POST thousands of rows/sec and bloat the DB (free tier = 500MB) or run up
+  // function usage. Reject if this IP inserted >= INSERT_BURST rows in the window.
+  const INSERT_WINDOW_MS = 10 * 1000;   // look-back window
+  const INSERT_BURST = 6;               // max messages per IP per window
+  const { data: recentByIp } = await supabase
+    .from('public_messages')
+    .select('id')
+    .eq('visitor_id', clientIp)
+    .gte('created_at', new Date(Date.now() - INSERT_WINDOW_MS).toISOString());
+  if (recentByIp && recentByIp.length >= INSERT_BURST) {
+    return {
+      statusCode: 429,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      body: JSON.stringify({ error: 'Slow down.' }),
+    };
+  }
+
   // ── Always save the visitor's message so the live chat shows everyone ──────
   const { error: insertErr } = await supabase.from('public_messages').insert({
     sender_name: senderName,
