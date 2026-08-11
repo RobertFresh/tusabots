@@ -204,12 +204,12 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
 (function(){
   var canvas=document.getElementById("bg-canvas"),ctx=canvas.getContext("2d");
   // ---- tunable knobs (one number each) ----
-  var DUST_COUNT=90;     // floating dust motes
-  var RAY_COUNT=3;       // vertical god-ray light shafts
-  var RAY_OPACITY=0.07;  // brightness of a shaft
-  var LIGHT_COUNT=14;    // distant flickering fixtures near the horizon
-  var HAZE=0.55;         // strength of vanishing-point glow + edge vignette
-  var FLOOR_LINES=14;    // perspective floor lines fanning from the vanishing point
+  var DUST_COUNT=110;    // floating dust motes
+  var RAY_COUNT=4;       // vertical god-ray light shafts
+  var RAY_OPACITY=0.16;  // brightness of a shaft
+  var LIGHT_COUNT=18;    // distant flickering fixtures near the horizon
+  var HAZE=0.9;          // strength of vanishing-point glow + edge vignette
+  var FLOOR_LINES=18;    // perspective floor lines fanning from the vanishing point
   // -----------------------------------------
   var dust=[],lights=[],rays=[],W=0,H=0,vpX=0,horizonY=0,frame=0;
   function rand(a,b){return a+Math.random()*(b-a);}
@@ -231,21 +231,32 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
     ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   }
   function drawStructure(){
+    // solid darker floor band below the horizon = clear ground plane
+    var fg=ctx.createLinearGradient(0,horizonY,0,H);
+    fg.addColorStop(0,"rgba(40,26,12,0.0)");fg.addColorStop(0.15,"rgba(34,22,10,0.55)");
+    fg.addColorStop(1,"rgba(10,6,3,0.85)");
+    ctx.fillStyle=fg;ctx.fillRect(0,horizonY,W,H-horizonY);
     // perspective floor lines fanning from the vanishing point down to the bottom edge
-    ctx.strokeStyle="rgba(212,145,10,0.05)";ctx.lineWidth=1;
+    ctx.strokeStyle="rgba(230,160,60,0.16)";ctx.lineWidth=1;
     var i;
     for(i=0;i<=FLOOR_LINES;i++){var fx=(i/FLOOR_LINES)*W;
       ctx.beginPath();ctx.moveTo(vpX,horizonY);ctx.lineTo(fx,H);ctx.stroke();}
     // receding horizontal floor lines (bunch up near the horizon)
-    for(i=1;i<=8;i++){var t=i/8,y=horizonY+(H-horizonY)*(t*t);
-      ctx.globalAlpha=0.5*(1-t*0.4);
+    for(i=1;i<=9;i++){var t=i/9,y=horizonY+(H-horizonY)*(t*t);
+      ctx.globalAlpha=0.7*(1-t*0.4);
       ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
     ctx.globalAlpha=1;
-    // tall wall girders left & right, fading toward the centre
-    for(i=0;i<5;i++){var a=0.06*(1-i/5);
-      ctx.strokeStyle="rgba(184,115,51,"+a+")";
-      var lx=(i/5)*W*0.30;ctx.beginPath();ctx.moveTo(lx,0);ctx.lineTo(lx,horizonY);ctx.stroke();
-      var rx=W-(i/5)*W*0.30;ctx.beginPath();ctx.moveTo(rx,0);ctx.lineTo(rx,horizonY);ctx.stroke();}
+    // bright horizon line where floor meets the far wall
+    ctx.strokeStyle="rgba(255,180,80,0.22)";ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(0,horizonY);ctx.lineTo(W,horizonY);ctx.stroke();
+    // tall wall girders left & right, converging toward the vanishing point
+    ctx.lineWidth=1.5;
+    for(i=0;i<6;i++){var a=0.18*(1-i/6);
+      ctx.strokeStyle="rgba(190,120,55,"+a+")";
+      var lx=(i/6)*W*0.34;
+      ctx.beginPath();ctx.moveTo(lx,0);ctx.lineTo(lx+(vpX-lx)*0.55,horizonY);ctx.stroke();
+      var rx=W-(i/6)*W*0.34;
+      ctx.beginPath();ctx.moveTo(rx,0);ctx.lineTo(rx-(rx-vpX)*0.55,horizonY);ctx.stroke();}
   }
   function drawRays(){
     ctx.globalCompositeOperation="lighter";
