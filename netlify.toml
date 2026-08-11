@@ -9,3 +9,19 @@ NODE_VERSION = "22"
 from = "/chat"
 to = "/dashboard.html"
 status = 200
+
+# ── Security headers (defence-in-depth) ──────────────────────────────────────
+# Applied to every response. CSP allows exactly what the site uses:
+#   - inline <script>/<style> + onclick handlers  → 'unsafe-inline'
+#   - Supabase SDK from jsDelivr                    → script-src cdn.jsdelivr.net
+#   - Supabase REST + Realtime websockets          → connect-src https/wss supabase
+# frame-ancestors 'none' + X-Frame-Options DENY block clickjacking (iframe embed).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://bmzugcvblitljrawghwx.supabase.co wss://bmzugcvblitljrawghwx.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
