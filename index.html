@@ -125,6 +125,9 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
      the mobile address bar) so chat + input fit with no page scroll. */
   .main-content{padding:58px 0.5rem 0.5rem;height:100dvh;max-height:100dvh;justify-content:flex-start}
   .stream-layout{flex-direction:column;max-height:none;height:100%;gap:0.5rem}
+  /* Head shrinks to a capped band on mobile so the chat always keeps room. */
+  .robot-hero{flex:0 1 auto;min-height:0;margin-bottom:0.2rem}
+  .robot-svg{max-height:22vh;width:auto}
   /* Chat fills all available height; min-height:0 lets its inner list scroll. */
   .public-chat{flex:1 1 auto;width:100%;max-width:none;min-height:0}
   .chat-messages{flex:1 1 auto;min-height:0}
@@ -398,14 +401,18 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
     mouth.setAttribute('d', MOUTH_SMILE);
   }
 
-  // Idle blink: squash the eyes briefly every 3-5s (skip while talking).
+  // Reusable blink: squash both eyes briefly.
+  function blink() {
+    if (!eyeL || !eyeR) return;
+    eyeL.setAttribute('ry', '1'); eyeR.setAttribute('ry', '1');
+    setTimeout(() => { eyeL.setAttribute('ry', '7'); eyeR.setAttribute('ry', '7'); }, 130);
+  }
+
+  // Idle auto-blink every 3-5s (skip while talking).
   function scheduleBlink() {
     const delay = 3000 + Math.random() * 2000;
     blinkTimeout = setTimeout(() => {
-      if (!talking && eyeL && eyeR) {
-        eyeL.setAttribute('ry', '1'); eyeR.setAttribute('ry', '1');
-        setTimeout(() => { eyeL.setAttribute('ry', '7'); eyeR.setAttribute('ry', '7'); }, 120);
-      }
+      if (!talking) blink();
       scheduleBlink();
     }, delay);
   }
@@ -414,13 +421,32 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
   // Expose for chat logic (unchanged contract: startTalking / stopTalking)
   window.robotHead = { startTalking, stopTalking };
 
-  // ── Interactivity: double-click spins 360; click-hold + drag rotates ──
+  // ── Interactivity: works with mouse AND touch (unified pointer events) ──
+  //   • click-hold + drag  → rotates the head with the cursor/finger
+  //   • double-click / double-tap → full 360° spin
+  //   • single tap/click on an eye → blink
   let rotation = 0, dragging = false, dragStartAngle = 0, rotAtDragStart = 0, moved = false;
+  let lastTapTime = 0;
+
   function angleFromCenter(x, y) {
     const rect = svg.getBoundingClientRect();
     return Math.atan2(y - (rect.top + rect.height/2), x - (rect.left + rect.width/2)) * 180 / Math.PI;
   }
   function apply() { svg.style.transform = 'rotate(' + rotation + 'deg)'; }
+  function spin() { rotation += 360; apply(); }
+
+  // Map a screen point to SVG user coordinates (accounts for CSS rotation),
+  // so we can tell whether a tap landed on an eye even when the head is spun.
+  function isEyeTap(clientX, clientY) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return false;
+    const pt = svg.createSVGPoint(); pt.x = clientX; pt.y = clientY;
+    const p = pt.matrixTransform(ctm.inverse());
+    const HIT = 26; // generous tap radius in viewBox units (eyes are small)
+    const dL = Math.hypot(p.x - 80, p.y - 106);
+    const dR = Math.hypot(p.x - 120, p.y - 106);
+    return dL < HIT || dR < HIT;
+  }
 
   svg.addEventListener('pointerdown', (e) => {
     e.preventDefault();
@@ -433,7 +459,7 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
   svg.addEventListener('pointermove', (e) => {
     if (!dragging) return;
     const delta = angleFromCenter(e.clientX, e.clientY) - dragStartAngle;
-    if (Math.abs(delta) > 2) moved = true;
+    if (Math.abs(delta) > 3) moved = true;
     rotation = rotAtDragStart + delta;
     apply();
   });
@@ -442,10 +468,22 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
     dragging = false;
     svg.classList.remove('dragging');
     try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
+
+    if (moved) return; // it was a drag, not a tap — do nothing extra
+
+    // It was a tap/click. Eye tap → blink.
+    if (isEyeTap(e.clientX, e.clientY)) { blink(); lastTapTime = 0; return; }
+
+    // Otherwise, detect a double-tap (mainly for touch, where dblclick is flaky).
+    const now = Date.now();
+    if (now - lastTapTime < 320) { spin(); lastTapTime = 0; }
+    else { lastTapTime = now; }
   }
   svg.addEventListener('pointerup', endDrag);
   svg.addEventListener('pointercancel', endDrag);
-  svg.addEventListener('dblclick', () => { if (moved) return; rotation += 360; apply(); });
+
+  // Desktop double-click (redundant with double-tap, but snappier with a mouse).
+  svg.addEventListener('dblclick', () => { if (!moved) spin(); });
 })();
 </script>
 
