@@ -16,7 +16,7 @@ window.ENV = {
 :root{
   --bg-primary:#140f0a;
   --bg-secondary:#0d1117;
-  --bg-card:rgba(15,20,35,0.6);
+  --bg-card:rgba(28,18,10,0.44);
   --accent-cyan:#f5a623;
   --accent-blue:#c9741f;
   --accent-purple:#7b61ff;
@@ -49,7 +49,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 .stream-layout{display:flex;justify-content:center;gap:0.85rem;width:100%;flex:1;min-height:0;max-height:calc(100vh - 90px)}
 
 /* Chat container — now the centred full-height hero (max ~780px for readability) */
-.public-chat{flex:1 1 auto;width:100%;max-width:780px;display:flex;flex-direction:column;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius);min-height:0}
+.public-chat{flex:1 1 auto;width:100%;max-width:780px;display:flex;flex-direction:column;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius);min-height:0}
 .chat-header{padding:0.75rem 1.25rem;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:0.5rem;flex-shrink:0}
 .chat-header-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-amber);box-shadow:0 0 6px var(--accent-amber);animation:dotPulse 2s ease-in-out infinite}
 @keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -237,21 +237,21 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
     fg.addColorStop(1,"rgba(10,6,3,0.85)");
     ctx.fillStyle=fg;ctx.fillRect(0,horizonY,W,H-horizonY);
     // perspective floor lines fanning from the vanishing point down to the bottom edge
-    ctx.strokeStyle="rgba(230,160,60,0.16)";ctx.lineWidth=1;
+    ctx.strokeStyle="rgba(235,165,70,0.28)";ctx.lineWidth=1.2;
     var i;
     for(i=0;i<=FLOOR_LINES;i++){var fx=(i/FLOOR_LINES)*W;
       ctx.beginPath();ctx.moveTo(vpX,horizonY);ctx.lineTo(fx,H);ctx.stroke();}
     // receding horizontal floor lines (bunch up near the horizon)
     for(i=1;i<=9;i++){var t=i/9,y=horizonY+(H-horizonY)*(t*t);
-      ctx.globalAlpha=0.7*(1-t*0.4);
+      ctx.globalAlpha=0.85*(1-t*0.35);
       ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
     ctx.globalAlpha=1;
     // bright horizon line where floor meets the far wall
-    ctx.strokeStyle="rgba(255,180,80,0.22)";ctx.lineWidth=1.5;
+    ctx.strokeStyle="rgba(255,185,90,0.40)";ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(0,horizonY);ctx.lineTo(W,horizonY);ctx.stroke();
     // tall wall girders left & right, converging toward the vanishing point
-    ctx.lineWidth=1.5;
-    for(i=0;i<6;i++){var a=0.18*(1-i/6);
+    ctx.lineWidth=1.6;
+    for(i=0;i<6;i++){var a=0.30*(1-i/6);
       ctx.strokeStyle="rgba(190,120,55,"+a+")";
       var lx=(i/6)*W*0.34;
       ctx.beginPath();ctx.moveTo(lx,0);ctx.lineTo(lx+(vpX-lx)*0.55,horizonY);ctx.stroke();
@@ -290,8 +290,8 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
     var vg=ctx.createRadialGradient(vpX,horizonY,0,vpX,horizonY,H*0.6);
     vg.addColorStop(0,"rgba(120,70,25,"+(0.25*HAZE)+")");vg.addColorStop(1,"rgba(120,70,25,0)");
     ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
-    var eg=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.85);
-    eg.addColorStop(0,"rgba(0,0,0,0)");eg.addColorStop(1,"rgba(0,0,0,"+(0.6*HAZE)+")");
+    var eg=ctx.createRadialGradient(W/2,H/2,H*0.45,W/2,H/2,H*0.95);
+    eg.addColorStop(0,"rgba(0,0,0,0)");eg.addColorStop(1,"rgba(0,0,0,"+(0.28*HAZE)+")");
     ctx.fillStyle=eg;ctx.fillRect(0,0,W,H);
   }
   function animate(){frame++;
