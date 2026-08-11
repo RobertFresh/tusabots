@@ -74,4 +74,26 @@ async function saveMessage(userId, role, content, workspaceId = 'default') {
   await supabaseAdmin.from('messages').insert({ user_id: userId, role, content, workspace_id: workspaceId });
 }
 
-module.exports = { retrieveMemory, saveMessage };
+module.exports = { retrieveMemory, saveMessage, countRecentUserMessages };
+
+/**
+ * Count how many 'user' messages this user has sent across ALL workspaces since
+ * `sinceIso`. Used for per-user rate limiting on the (expensive) private chat.
+ * @param {string} userId
+ * @param {string} sinceIso - ISO timestamp lower bound
+ * @returns {Promise<number>}
+ */
+async function countRecentUserMessages(userId, sinceIso) {
+  if (!supabaseAdmin || !userId) return 0;
+  const { count, error } = await supabaseAdmin
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('role', 'user')
+    .gte('created_at', sinceIso);
+  if (error) {
+    console.error('[memory/countRecentUserMessages] query failed:', error.message);
+    return 0; // fail open — never block a paying user because a count errored
+  }
+  return count || 0;
+}

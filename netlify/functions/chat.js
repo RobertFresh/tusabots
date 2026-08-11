@@ -2,7 +2,7 @@
 // Phase 1: workspace scoping + lightweight command parsing
 const { validateAuth, getUserId } = require('./auth-validate.js');
 const { buildContext } = require('../../orchestrator/buildContext');
-const { saveMessage, retrieveMemory } = require('../../memory/retrieveMemory');
+const { saveMessage, retrieveMemory, countRecentUserMessages } = require('../../memory/retrieveMemory');
 
 // ─── Workspace command parser ────────────────────────────────────────────────
 // Deterministic pattern matching — no AI involved.
@@ -27,12 +27,12 @@ function parseWorkspaceCommand(message) {
       if (name === 'default') {
         return { action: 'switch', workspace: 'default' };
       }
-      // Allowlist: extend this list as workspaces are created
+      // Hard allowlist: reject unknown workspace names instead of accepting anything.
       const ALLOWED = ['default', 'work', 'personal', 'tusabot', 'deploy-notes'];
       if (ALLOWED.includes(name)) {
         return { action: 'switch', workspace: name };
       }
-      return { action: 'switch', workspace: name }; // return anyway; allowlist is soft
+      return { action: 'reject', workspace: name };
     }
   }
   return null;
@@ -52,9 +52,7 @@ exports.handler = async (event) => {
     return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden.' }) };
   }
 
-  // ── Runtime env validation (observational only) ──
-  console.log('[env] SUPABASE_URL present:', !!process.env.SUPABASE_URL);
-  console.log('[env] SUPABASE_SERVICE_ROLE_KEY present:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+  // ── Runtime env validation ──
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[FATAL ENV] Missing Supabase admin credentials — memory/storage WILL FAIL');
   }
@@ -65,7 +63,6 @@ exports.handler = async (event) => {
     return { statusCode: authResult.statusCode, body: authResult.body };
   }
   const userId = getUserId(authResult.user) || authResult.user.user?.id || authResult.user.user?.sub;
-  console.log('[chat] userId:', userId);
 
   // Step 2: Validate required env vars
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -86,8 +83,13 @@ exports.handler = async (event) => {
   try {
     body = JSON.parse(event.body);
     message = body.message;
-    history = Array.isArray(body.history) ? body.history : [];
-    workspaceId = typeof body.workspaceId === 'string' && body.workspaceId.length > 0
+    // Sanitize history: keep only well-formed {role: user|assistant, content: string}
+    // entries. Prevents a crafted client injecting role:'system' or junk into Claude.
+    history = (Array.isArray(body.history) ? body.history : [])
+      .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+      .slice(-20);
+    // Validate workspaceId shape; fall back to 'default' for anything unexpected.
+    workspaceId = (typeof body.workspaceId === 'string' && /^[a-z0-9-]{1,30}$/.test(body.workspaceId))
       ? body.workspaceId
       : 'default';
   } catch {
@@ -109,6 +111,13 @@ exports.handler = async (event) => {
 
   // Step 4: Check for workspace command (before normal processing)
   const command = parseWorkspaceCommand(message);
+  if (command && command.action === 'reject') {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reply: `Unknown workspace: **${command.workspace}**. Staying put.` })
+    };
+  }
   if (command && command.action === 'switch') {
     const targetWorkspace = command.workspace;
     console.log('[chat] workspace command → switching to:', targetWorkspace);
@@ -119,6 +128,22 @@ exports.handler = async (event) => {
         reply: `Switched to workspace: **${targetWorkspace}**. Context scope updated.`,
         workspaceSwitch: targetWorkspace,
       })
+    };
+  }
+
+  // ── Per-user rate limit (protects the expensive Sonnet endpoint from abuse) ──
+  // An authenticated user could otherwise fire unlimited 1024-token Sonnet calls.
+  // We reach here only for a genuine chat turn (peekMode + workspace switches
+  // already returned above), so the count gates exactly the paid requests.
+  // Fails open on count error (never blocks a paying user because a count broke).
+  const USER_MAX_PER_MIN = 15;
+  const rlSinceIso = new Date(Date.now() - 60 * 1000).toISOString();
+  const recentUserCount = await countRecentUserMessages(userId, rlSinceIso);
+  if (recentUserCount >= USER_MAX_PER_MIN) {
+    return {
+      statusCode: 429,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Too many messages. Please wait a moment.' })
     };
   }
 
