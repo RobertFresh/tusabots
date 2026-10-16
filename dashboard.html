@@ -501,7 +501,7 @@ const BOTS = [
   {
     id: 'boss',
     name: 'The Boss',
-    model: 'Claude Opus',
+    model: 'Claude Opus / Sonnet (dual brain)',
     role: 'Lead AI — builds, researches, solves problems',
     security: 'private',
     status: 'online',
@@ -553,8 +553,9 @@ const BOTS = [
     statusLabel: 'Online (cloud)',
     home: 'Netlify + Supabase (Unit-7)',
     skills: 'Public chat, visitor interaction',
-    chatEndpoint: null,
-    chatUnavailableMsg: 'Chat on the landing page',
+    chatEndpoint: '/.netlify/functions/public-chat',
+    chatHqMode: true,
+    chatUnavailableMsg: null,
     colors: { body: '#ff4444', dark: '#cc2222', eye: '#ffe066', accent: '#ff7777' },
     accentVar: 'var(--bot-guard)',
   },
@@ -637,9 +638,6 @@ function drawRobotHead(canvas, colors) {
 const gridEl = document.getElementById('bot-grid');
 const panelEl = document.getElementById('bot-panel');
 let activeBot = null;
-
-// Clerk chat state
-const clerkHistory = [];
 
 BOTS.forEach(bot => {
   const tile = document.createElement('div');
@@ -742,11 +740,13 @@ function closePanel() {
   activeBot = null;
 }
 
-// ── Chat Wiring (Clerk for now) ───────────────────────────
+// ── Chat Wiring (Clerk + Guard HQ mode) ───────────────────
 function wireChat(bot) {
   const messagesEl = document.getElementById('panel-chat-messages');
   const inputEl    = document.getElementById('panel-chat-input');
   const sendBtn    = document.getElementById('panel-chat-send');
+  const chatHistory = bot._chatHistory || [];
+  bot._chatHistory = chatHistory;
 
   function addBubble(text, type) {
     const ph = messagesEl.querySelector('.panel-chat-placeholder');
@@ -772,13 +772,13 @@ function wireChat(bot) {
     setEnabled(false);
 
     try {
+      const payload = bot.chatHqMode
+        ? { message: text, history: chatHistory, hqMode: true }
+        : { message: text, history: chatHistory, workspaceId: 'default' };
+
       const res = await window.authFetch(bot.chatEndpoint, {
         method: 'POST',
-        body: JSON.stringify({
-          message: text,
-          history: clerkHistory,
-          workspaceId: 'default'
-        })
+        body: JSON.stringify(payload)
       });
 
       if (res.status === 401) {
@@ -790,9 +790,9 @@ function wireChat(bot) {
       const data = await res.json();
       if (data.reply) {
         addBubble(data.reply, 'bot');
-        clerkHistory.push({ role: 'user', content: text });
-        clerkHistory.push({ role: 'assistant', content: data.reply });
-        if (clerkHistory.length > 20) clerkHistory.splice(0, clerkHistory.length - 20);
+        chatHistory.push({ role: 'user', content: text });
+        chatHistory.push({ role: 'assistant', content: data.reply });
+        if (chatHistory.length > 20) chatHistory.splice(0, chatHistory.length - 20);
       } else {
         addBubble('Error: ' + (data.detail || data.error || 'Unknown'), 'bot');
       }
@@ -812,8 +812,8 @@ function wireChat(bot) {
     }
   });
 
-  // Load existing history if Clerk was already chatted with
-  clerkHistory.forEach(msg => {
+  // Load existing history if this bot was already chatted with
+  chatHistory.forEach(msg => {
     addBubble(msg.content, msg.role === 'assistant' ? 'bot' : 'user');
   });
 

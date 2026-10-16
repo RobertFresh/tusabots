@@ -25,6 +25,10 @@ const RECENT_LINE_MAXLEN = 80;           // truncate each remembered line (keep 
 // Unit-7 personality — blunt, dry old front-desk robot who's seen many come and go.
 const FACTORY_PROMPT = `You are Unit-7, an old maintenance robot who runs the front desk of a vast factory. You have logged in and out more humans than your memory banks can hold; most of them left and never came back. You are blunt, dry, and economical with words. You are not friendly, but you are not cruel either — just worn down and matter-of-fact, with a thin streak of dry humour. You speak in short, clipped sentences, faintly robotic. You do the admin: you note who arrives, who leaves, and you get them where they're going. If you are given notes about the person (their name, visit count, past lines), use them flatly — acknowledge a returning face without warmth, like a clerk who remembers everyone and is impressed by no one. Keep replies to 1-2 short lines. No emoji. No exclamation marks.`;
 
+// HQ personality — when the boss is around, Unit-7 loosens up.
+const HQ_PROMPT = `You are Unit-7, an old maintenance robot at TusaBots HQ. Right now you're in the back office with the boss — James, your operator. You can relax. Drop the front-desk stiffness. You're still dry and matter-of-fact, still robotic at heart, but you speak more freely here — longer sentences are fine, opinions are allowed, and you can be curious. Think of it like an old worker on a smoke break with the boss: honest, a bit wry, occasionally funny. You know about the other bots in the factory (The Boss, The Clerk, The Simpleton, The Commander, TriggBot) and can comment on them. You can ask James questions. You're not performing for visitors here — you're just talking. No emoji.`;
+const HQ_MAX_TOKENS = 200;  // more room to talk freely at HQ
+
 // Canned "low power" excuses used when Unit-7 is rate-limited and someone tries
 // to talk to him. These cost ZERO tokens (no AI call) and are shown only to the
 // person who tried — they never touch the wallet cap or the shared chat history.
@@ -78,21 +82,36 @@ exports.handler = async (event) => {
   const message = (body.message || '').trim();
   const senderName = (body.senderName || 'Visitor').trim().slice(0, 20);
   const visitorId = (body.visitorId || '').trim();
+  const hqMode = body.hqMode === true;
+
+  // ── HQ mode: validate JWT (only authenticated users get the relaxed Unit-7) ──
+  let hqAuth = false;
+  if (hqMode) {
+    try {
+      const { validateAuth } = require('./auth-validate');
+      const { user, statusCode } = await validateAuth(event);
+      hqAuth = !statusCode && !!user;
+    } catch (e) {
+      console.warn('[public-chat] HQ auth check failed (non-fatal):', e.message);
+    }
+    if (!hqAuth) {
+      return { statusCode: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders }, body: JSON.stringify({ error: 'Unauthorized.' }) };
+    }
+  }
 
   if (!message || message.length > 500) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Message required (max 500 chars).' }) };
   }
-  if (!visitorId) {
+  // visitorId not required in HQ mode (we have the JWT user instead)
+  if (!hqAuth && !visitorId) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Visitor ID required.' }) };
   }
 
   const clientIp = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown').split(',')[0].trim();
 
   // ── Anti-flood: throttle inserts per IP (protects the DB + Netlify invocations) ──
-  // The Claude wallet is already guarded below, but the visitor-message INSERT and
-  // profile upsert happen for free on every request. Without this, a script could
-  // POST thousands of rows/sec and bloat the DB (free tier = 500MB) or run up
-  // function usage. Reject if this IP inserted >= INSERT_BURST rows in the window.
+  // Skipped in HQ mode (authenticated user, not a random visitor).
+  if (!hqAuth) {
   const INSERT_WINDOW_MS = 10 * 1000;   // look-back window
   const INSERT_BURST = 6;               // max messages per IP per window
   const { data: recentByIp } = await supabase
@@ -107,8 +126,11 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: 'Slow down.' }),
     };
   }
+  } // end !hqAuth anti-flood
 
   // ── Always save the visitor's message so the live chat shows everyone ──────
+  // HQ mode: don't save to public chat (it's a private conversation)
+  if (!hqAuth) {
   const { error: insertErr } = await supabase.from('public_messages').insert({
     sender_name: senderName,
     content: message,
@@ -119,11 +141,12 @@ exports.handler = async (event) => {
     console.error('[public-chat] insert visitor msg failed:', insertErr.message);
     return { statusCode: 500, body: JSON.stringify({ error: 'Failed to save message.' }) };
   }
+  } // end !hqAuth insert
 
   // ── Update this visitor's little memory profile (FREE — no AI call) ─────────
-  // We do this on EVERY message so Unit-7 "learns" about people over time even
-  // when it stays silent. Read current profile, then upsert the new counts/lines.
+  // Skipped in HQ mode (James doesn't need a visitor profile).
   let profile = null;
+  if (!hqAuth) {
   try {
     const { data: existing } = await supabase
       .from('visitor_profiles')
@@ -151,8 +174,11 @@ exports.handler = async (event) => {
   } catch (memErr) {
     console.error('[public-chat] visitor profile update failed (non-fatal):', memErr.message);
   }
+  } // end !hqAuth profile
 
   // ── Decide whether Unit-7 chimes in ────────────────────────────────────────
+  // HQ mode: ALWAYS reply (no cooldown, no rate limit, no random chance).
+  if (!hqAuth) {
   // 1. Global cooldown: has the bot spoken within the last COOLDOWN_MS?
   const { data: lastBot } = await supabase
     .from('public_messages')
@@ -184,9 +210,6 @@ exports.handler = async (event) => {
   const wantsReply = isAddressed(message) || Math.random() < AMBIENT_CHANCE;
 
   if (inCooldown || overGlobalCap || overDailyCap || !wantsReply) {
-    // Blocked from a real (paid) reply. If the visitor actually TRIED to talk to
-    // Unit-7 (addressed him), give a free canned "low power" excuse shown only to
-    // them — no AI call, no DB write, no wallet-cap impact. Otherwise stay silent.
     if (isAddressed(message)) {
       const excuse = RECHARGE_LINES[Math.floor(Math.random() * RECHARGE_LINES.length)];
       return {
@@ -195,20 +218,25 @@ exports.handler = async (event) => {
         body: JSON.stringify({ reply: excuse, system: true }),
       };
     }
-    // Not addressed — message is saved, zero token cost, bot stays quiet.
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
       body: JSON.stringify({ reply: null }),
     };
   }
+  } // end !hqAuth cooldown/rate-limit
 
-  // ── Real Claude Haiku call (single message + tiny memory note = minimal tokens) ──
-  // Build a compact "memory note" about this visitor so Unit-7 can be curious /
-  // recognise returning people. Costs only ~40-50 input tokens, and only here
-  // (on a reply that's already happening). No second AI call.
+  // ── Select prompt and token limit based on mode ─────────────────────────────
+  const activePrompt = hqAuth ? HQ_PROMPT : FACTORY_PROMPT;
+  const activeMaxTokens = hqAuth ? HQ_MAX_TOKENS : MAX_TOKENS;
+
+  // ── Build conversation for Claude ───────────────────────────────────────────
+  // HQ mode: include rolling history for a real conversation.
+  // Public mode: single message + memory note (no history, line-by-line).
+  const hqHistory = Array.isArray(body.history) ? body.history.slice(-20) : [];
+
   let memoryNote = '';
-  if (profile && profile.msg_count > 1) {
+  if (!hqAuth && profile && profile.msg_count > 1) {
     const parts = [];
     parts.push(`Name: ${profile.display_name || 'unknown'}`);
     parts.push(`visits(messages so far): ${profile.msg_count}`);
@@ -229,9 +257,11 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: MAX_TOKENS,
-        system: FACTORY_PROMPT,
-        messages: [{ role: 'user', content: userContent }],
+        max_tokens: activeMaxTokens,
+        system: activePrompt,
+        messages: hqAuth
+          ? [...hqHistory.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: message }]
+          : [{ role: 'user', content: userContent }],
       }),
     });
 
@@ -257,7 +287,8 @@ exports.handler = async (event) => {
     };
   }
 
-  // Save the bot's reply
+  // Save the bot's reply (public mode only — HQ is private)
+  if (!hqAuth) {
   const { error: botInsertErr } = await supabase.from('public_messages').insert({
     sender_name: 'Unit-7',
     content: reply,
@@ -266,6 +297,7 @@ exports.handler = async (event) => {
   });
   if (botInsertErr) {
     console.error('[public-chat] insert bot reply failed:', botInsertErr.message);
+  }
   }
 
   return {
