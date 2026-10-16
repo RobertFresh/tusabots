@@ -534,12 +534,13 @@ const BOTS = [
     model: 'Ollama qwen2.5:3b (local)',
     role: 'Casual chat, memory keeper, home control',
     security: 'private',
-    status: 'sleeping',
-    statusLabel: 'Sleeping (on-demand)',
+    status: 'online',
+    statusLabel: 'Online (via tunnel)',
     home: 'Pi (Telegram)',
     skills: 'Chat, memory, home control',
-    chatEndpoint: null,
-    chatUnavailableMsg: 'Needs Cloudflare Tunnel — coming soon',
+    chatEndpoint: '/.netlify/functions/ollama-chat',
+    chatBotId: 'simpleton',
+    chatUnavailableMsg: null,
     colors: { body: '#00ff88', dark: '#00b860', eye: '#0a0a0f', accent: '#66ffb2' },
     accentVar: 'var(--bot-simpleton)',
   },
@@ -584,8 +585,9 @@ const BOTS = [
     statusLabel: 'Online (24/7)',
     home: 'Pi → Twitch IRC + YouTube Live Chat',
     skills: 'Chat, stream companion, cross-platform reader, safety filters',
-    chatEndpoint: null,
-    chatUnavailableMsg: 'Chat via Twitch @mrtwiggbot — dashboard link coming soon',
+    chatEndpoint: '/.netlify/functions/ollama-chat',
+    chatBotId: 'triggbot',
+    chatUnavailableMsg: null,
     colors: { body: '#b44aff', dark: '#8a2be2', eye: '#ffe066', accent: '#d18aff' },
     accentVar: 'var(--bot-triggbot)',
   },
@@ -774,6 +776,8 @@ function wireChat(bot) {
     try {
       const payload = bot.chatHqMode
         ? { message: text, history: chatHistory, hqMode: true }
+        : bot.chatBotId
+        ? { message: text, history: chatHistory, botId: bot.chatBotId }
         : { message: text, history: chatHistory, workspaceId: 'default' };
 
       const res = await window.authFetch(bot.chatEndpoint, {
