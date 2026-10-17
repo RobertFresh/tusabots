@@ -1,4 +1,4 @@
-// TusaBot chat function — Supabase auth, memory, Anthropic Claude
+// TusaBot chat function — Supabase auth, memory, OpenRouter AI (The Clerk)
 // Phase 1: workspace scoping + lightweight command parsing
 const { validateAuth, getUserId } = require('./auth-validate.js');
 const { buildContext } = require('../../orchestrator/buildContext');
@@ -65,10 +65,10 @@ exports.handler = async (event) => {
   const userId = getUserId(authResult.user) || authResult.user.user?.id || authResult.user.user?.sub;
 
   // Step 2: Validate required env vars
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.OPENROUTER_API_KEY) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Claude API key not configured. Set it in Netlify environment variables.' })
+      body: JSON.stringify({ error: 'OpenRouter API key not configured. Set it in Netlify environment variables.' })
     };
   }
 
@@ -155,30 +155,36 @@ exports.handler = async (event) => {
     workspaceId,
   });
 
-  // Step 6: Call Claude
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  // Step 6: Call AI via OpenRouter (OpenAI-compatible)
+  const clerkModel = process.env.CLERK_MODEL || 'anthropic/claude-sonnet-4';
+  const orMessages = [
+    { role: 'system', content: system },
+    ...messages
+  ];
+
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01'
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'HTTP-Referer': 'https://tusabots.com',
+      'X-Title': 'TusaBots - The Clerk'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: clerkModel,
       max_tokens: 1024,
-      system,
-      messages
+      messages: orMessages
     })
   });
 
   if (!res.ok) {
     const err = await res.text();
-    console.error('[chat] Claude API error:', err);
+    console.error('[chat] OpenRouter API error:', err);
     return { statusCode: 500, body: JSON.stringify({ error: 'AI service unavailable.' }) };
   }
 
   const data = await res.json();
-  const reply = data.content[0].text;
+  const reply = data.choices[0].message.content;
 
   // Step 7: Save memory scoped to workspace (fire-and-forget)
   saveMessage(userId, 'user', message, workspaceId).catch(err => console.error('[chat/saveMessage FAILED]', err));
