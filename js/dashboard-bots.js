@@ -418,14 +418,13 @@ function wireChatLocal(bot) {
       let reply;
 
       if (bot.localChatType === 'ollama') {
-        // Direct Ollama call — use same host as the page (Pi's IP or localhost)
-        const piHost = window.location.hostname;
+        // Direct Ollama call via local proxy
         const personality = LOCAL_PERSONALITIES[bot.chatBotId] || LOCAL_PERSONALITIES.simpleton;
         const messages = [{ role: 'system', content: personality.system }];
         chatHistory.forEach(m => messages.push(m));
         messages.push({ role: 'user', content: text });
 
-        const res = await fetch(`http://${piHost}:11434/api/chat`, {
+        const res = await fetch('/api/ollama/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -440,10 +439,9 @@ function wireChatLocal(bot) {
         reply = data.message?.content || 'No response from Ollama.';
 
       } else if (bot.localChatType === 'commander') {
-        // Direct Commander API call
-        const piHost = window.location.hostname;
+        // Direct Commander API call via local proxy
         const command = text.startsWith('/') ? text : '/' + text;
-        const res = await fetch(`http://${piHost}:11436`, {
+        const res = await fetch('/api/commander', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ command }),
