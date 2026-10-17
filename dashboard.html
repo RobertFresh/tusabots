@@ -462,6 +462,16 @@ footer {
 
     // Show nav for local mode
     const navRight = document.getElementById('nav-right');
+
+    const homeBtn = document.createElement('a');
+    homeBtn.href = 'http://localhost:8484';
+    homeBtn.textContent = '🏠';
+    homeBtn.title = 'Back to Launcher';
+    homeBtn.style.cssText = 'font-size:1.4rem;text-decoration:none;cursor:pointer;transition:transform 0.2s;';
+    homeBtn.onmouseenter = () => homeBtn.style.transform = 'scale(1.2)';
+    homeBtn.onmouseleave = () => homeBtn.style.transform = 'scale(1)';
+    navRight.appendChild(homeBtn);
+
     const badge = document.createElement('span');
     badge.className = 'nav-user-email';
     badge.textContent = '📡 Local Mode';
