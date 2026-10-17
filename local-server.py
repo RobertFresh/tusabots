@@ -19,6 +19,15 @@ PORT = 8585
 OLLAMA_BASE = 'http://127.0.0.1:11434'
 COMMANDER_BASE = 'http://127.0.0.1:11436'
 
+# Read tunnel secret for Commander API auth
+_secret_path = os.path.join(os.path.expanduser('~'), 'tunnel-proxy', '.secret')
+try:
+    with open(_secret_path) as f:
+        TUNNEL_SECRET = f.read().strip()
+except FileNotFoundError:
+    TUNNEL_SECRET = ''
+    print(f'[WARNING] {_secret_path} not found — Commander proxy will fail auth')
+
 # Serve static files from the repo root
 WEB_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -27,6 +36,30 @@ class LocalHQHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=WEB_ROOT, **kwargs)
 
+    def do_GET(self):
+        # Proxy GET requests to Ollama (e.g. /api/ollama/api/tags)
+        if self.path.startswith('/api/ollama/'):
+            ollama_path = self.path[len('/api/ollama'):]
+            try:
+                req = urllib.request.Request(f'{OLLAMA_BASE}{ollama_path}', method='GET')
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    data = resp.read()
+                    self.send_response(resp.status)
+                    self._cors_headers()
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(data)
+            except Exception as e:
+                self.send_response(502)
+                self._cors_headers()
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
+            return
+
+        # Fall through to static file serving
+        super().do_GET()
+
     def do_POST(self):
         # Proxy: /api/ollama/* → Ollama
         if self.path.startswith('/api/ollama/'):
@@ -34,9 +67,9 @@ class LocalHQHandler(http.server.SimpleHTTPRequestHandler):
             self._proxy(f'{OLLAMA_BASE}{ollama_path}')
             return
 
-        # Proxy: /api/commander → Commander API
+        # Proxy: /api/commander → Commander API (with auth)
         if self.path == '/api/commander':
-            self._proxy(COMMANDER_BASE)
+            self._proxy(COMMANDER_BASE, extra_headers={'X-Tunnel-Secret': TUNNEL_SECRET})
             return
 
         self.send_error(404, 'Not found')
@@ -52,15 +85,19 @@ class LocalHQHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
-    def _proxy(self, target_url):
+    def _proxy(self, target_url, extra_headers=None):
         try:
             length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(length) if length > 0 else b''
 
+            headers = {'Content-Type': 'application/json'}
+            if extra_headers:
+                headers.update(extra_headers)
+
             req = urllib.request.Request(
                 target_url,
                 data=body,
-                headers={'Content-Type': 'application/json'},
+                headers=headers,
                 method='POST',
             )
 
