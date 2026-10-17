@@ -1,93 +1,71 @@
 // lib/supabase.js
 //
-// Lightweight Supabase REST API client — no external dependencies.
+// Lightweight Supabase auth client — httpOnly cookie edition.
 //
-// Supabase exposes a REST API at /auth/v1/* that accepts the anon key
-// in an apikey header.  This module replaces @supabase/supabase-js for
-// the auth use-case (sign-in, sign-up, session management, token refresh).
+// Auth tokens are stored in httpOnly cookies managed by the auth-session
+// Netlify function.  This module NEVER reads or writes tokens to
+// localStorage (except to clear legacy data on first load).
+//
 // Configuration comes from window.ENV which is injected by the Netlify
 // Edge Function.
 
-const SUPABASE_URL = window.ENV?.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = window.ENV?.VITE_SUPABASE_ANON_KEY || '';
+// ─── Auth-session endpoint ───────────────────────────────────────────────────
 
-// ─── Internal fetch wrapper ─────────────────────────────────────────────────
+const AUTH_SESSION_URL = '/.netlify/functions/auth-session';
 
-async function supabaseFetch(path, options = {}) {
-  if (!SUPABASE_URL) {
-    throw new Error(
-      '[Supabase] VITE_SUPABASE_URL is not set. ' +
-      'Set VITE_SUPABASE_URL in Netlify → Site Settings → Environment Variables ' +
-      '(Build-time scope), then trigger a new deploy.'
-    );
-  }
-  if (!SUPABASE_ANON_KEY) {
-    throw new Error(
-      '[Supabase] VITE_SUPABASE_ANON_KEY is not set. ' +
-      'Set VITE_SUPABASE_ANON_KEY in Netlify → Site Settings → Environment Variables ' +
-      '(Build-time scope), then trigger a new deploy.'
-    );
-  }
-  const url = `${SUPABASE_URL}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${options.bearer || ''}`,
-      ...(options.headers || {}),
-    },
+async function authSessionFetch(action, extra = {}) {
+  const res = await fetch(AUTH_SESSION_URL, {
+    method: 'POST',
+    credentials: 'include',               // send & receive httpOnly cookies
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...extra }),
   });
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw Object.assign(new Error(body.message || body.error_description || 'Request failed'), {
-      status: res.status,
-      body,
-    });
+    const err = new Error(body.error || 'Request failed');
+    err.status = res.status;
+    err.body = body;
+    throw err;
   }
   return body;
 }
 
-// ─── Session storage ─────────────────────────────────────────────────────────
+// ─── In-memory session state ─────────────────────────────────────────────────
 
-const SESSION_KEY = 'tusabots_session';
+let _currentUser = null;         // cached user object (never contains tokens)
+let _sessionChecked = false;     // whether we've validated with the server
+let _listeners = [];             // auth state change callbacks
 
-function saveSession(session) {
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  } catch {}
+function _notifyListeners(event) {
+  _listeners.forEach((cb) => {
+    try { cb(event, _currentUser); } catch (e) { console.error('[auth] listener error:', e); }
+  });
 }
 
-function loadSession() {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+// ─── Legacy cleanup ──────────────────────────────────────────────────────────
+
+function clearLegacySession() {
+  try { localStorage.removeItem('tusabots_session'); } catch {}
 }
 
-function clearSession() {
-  try {
-    localStorage.removeItem(SESSION_KEY);
-  } catch {}
-}
+// Run once on load
+clearLegacySession();
 
 // ─── Auth API ────────────────────────────────────────────────────────────────
 
 /**
  * Sign in with email and password.
+ * The auth-session function validates credentials and sets httpOnly cookies.
  * @param {{email: string, password: string}} credentials
- * @returns {{user: object, session: object}|{error: object}}
+ * @returns {{data: {user: object}, error: null} | {data: null, error: {message: string}}}
  */
 export async function signIn({ email, password }) {
   try {
-    const data = await supabaseFetch('/auth/v1/token?grant_type=password', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    saveSession(data);
+    const data = await authSessionFetch('signin', { email, password });
+    _currentUser = data.user;
+    _sessionChecked = true;
+    _notifyListeners('SIGNED_IN');
     return { data, error: null };
   } catch (err) {
     return { data: null, error: { message: err.message || 'Sign in failed' } };
@@ -97,15 +75,14 @@ export async function signIn({ email, password }) {
 /**
  * Sign up with email and password.
  * @param {{email: string, password: string}} credentials
- * @returns {{user: object, session: object}|{error: object}}
+ * @returns {{data: {user: object}, error: null} | {data: null, error: {message: string}}}
  */
 export async function signUp({ email, password }) {
   try {
-    const data = await supabaseFetch('/auth/v1/signup', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    saveSession(data);
+    const data = await authSessionFetch('signup', { email, password });
+    _currentUser = data.user;
+    _sessionChecked = true;
+    _notifyListeners('SIGNED_IN');
     return { data, error: null };
   } catch (err) {
     return { data: null, error: { message: err.message || 'Sign up failed' } };
@@ -113,60 +90,54 @@ export async function signUp({ email, password }) {
 }
 
 /**
- * Sign out the current user (clear session).
+ * Sign out the current user (clear httpOnly cookies via server).
  * @returns {{error: object|null}}
  */
 export async function signOut() {
-  const session = loadSession();
-  clearSession();
-  if (session?.access_token) {
-    try {
-      await supabaseFetch('/auth/v1/logout', {
-        method: 'POST',
-        bearer: session.access_token,
-      });
-    } catch {}
+  try {
+    await authSessionFetch('signout');
+  } catch {
+    // Best-effort — cookies may already be gone
   }
+  _currentUser = null;
+  _sessionChecked = true;
+  _notifyListeners('SIGNED_OUT');
   return { error: null };
 }
 
 // ─── Session helpers ─────────────────────────────────────────────────────────
 
-export async function getSession() {
-  const session = loadSession();
-  if (!session?.access_token) {
+/**
+ * Get the current session by asking the server to validate the httpOnly cookie.
+ * Caches the result in memory for the page lifetime (until signOut or refresh).
+ * @param {{forceCheck?: boolean}} options
+ * @returns {{session: {user: object}|null, user: object|null}}
+ */
+export async function getSession({ forceCheck = false } = {}) {
+  // Return cached if we've already checked this page load
+  if (_sessionChecked && !forceCheck) {
+    if (_currentUser) {
+      return { session: { user: _currentUser }, user: _currentUser };
+    }
     return { session: null, user: null };
   }
 
-  // Check if token has expired
-  if (session.expires_at && session.expires_at * 1000 < Date.now()) {
-    console.log('[auth] token expired, attempting refresh');
-    if (session.refresh_token) {
-      try {
-        const refreshed = await supabaseFetch('/auth/v1/token?grant_type=refresh_token', {
-          method: 'POST',
-          body: JSON.stringify({ refresh_token: session.refresh_token }),
-        });
-        saveSession(refreshed);
-        return { session: refreshed, user: refreshed.user };
-      } catch (err) {
-        console.error('[auth] refresh failed:', err.message);
-        clearSession();
-        return { session: null, user: null };
-      }
-    } else {
-      console.log('[auth] no refresh token, clearing session');
-      clearSession();
-      return { session: null, user: null };
-    }
+  try {
+    const data = await authSessionFetch('session');
+    _currentUser = data.user;
+    _sessionChecked = true;
+    return { session: { user: data.user }, user: data.user };
+  } catch (err) {
+    // 401 = no valid session
+    _currentUser = null;
+    _sessionChecked = true;
+    return { session: null, user: null };
   }
-
-  return { session, user: session.user };
 }
 
 export async function getUser() {
-  const { session } = await getSession();
-  return session?.user ?? null;
+  const { user } = await getSession();
+  return user;
 }
 
 export async function isAuthenticated() {
@@ -177,20 +148,18 @@ export async function isAuthenticated() {
 // ─── Auth-gated fetch helper ──────────────────────────────────────────────────
 
 /**
- * Wraps fetch() with the current session's access token as Bearer auth.
+ * Wraps fetch() with credentials: 'include' so httpOnly cookies are sent.
+ * No Authorization header is added — the server reads the cookie.
  * @param {string} url
  * @param {RequestInit} options
  * @returns {Promise<Response>}
  */
 export async function authFetch(url, options = {}) {
-  const { session } = await getSession();
   return fetch(url, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(session?.access_token
-        ? { 'Authorization': `Bearer ${session.access_token}` }
-        : {}),
       ...(options.headers || {}),
     },
   });
@@ -200,26 +169,30 @@ export async function authFetch(url, options = {}) {
 
 /**
  * Subscribe to auth state changes.
- * @param {(event: string, session: object|null) => void} callback
+ * @param {(event: string, user: object|null) => void} callback
  * @returns {() => void} unsubscribe
  */
 export function onAuthStateChange(callback) {
-  // Poll every 2 seconds to catch tab-close sign-outs in other tabs.
-  // Storage events catch cross-tab sign-outs in the same tab.
-  const storageKey = SESSION_KEY;
-  const onStorage = (e) => {
-    if (e.key === storageKey) {
-      const raw = e.newValue ? JSON.parse(e.newValue) : null;
-      callback(raw ? 'SIGNED_IN' : 'SIGNED_OUT', raw);
-    }
+  _listeners.push(callback);
+
+  // Fire once immediately with the current state
+  if (_sessionChecked) {
+    const event = _currentUser ? 'SIGNED_IN' : 'INITIAL_SESSION';
+    // Wrap user in a session-like object for backward compat
+    const sessionObj = _currentUser ? { user: _currentUser, access_token: '(httpOnly)' } : null;
+    callback(event, sessionObj);
+  } else {
+    // Check with server and then fire
+    getSession().then(() => {
+      const event = _currentUser ? 'SIGNED_IN' : 'INITIAL_SESSION';
+      const sessionObj = _currentUser ? { user: _currentUser, access_token: '(httpOnly)' } : null;
+      callback(event, sessionObj);
+    });
+  }
+
+  return () => {
+    _listeners = _listeners.filter((cb) => cb !== callback);
   };
-  window.addEventListener('storage', onStorage);
-
-  // Also fire once immediately with the current session
-  const current = loadSession();
-  callback(current ? 'SIGNED_IN' : 'INITIAL_SESSION', current);
-
-  return () => window.removeEventListener('storage', onStorage);
 }
 
 // ─── Post-login redirect handler ─────────────────────────────────────────────
@@ -227,18 +200,12 @@ export function onAuthStateChange(callback) {
 /**
  * Check the URL for a ?next= param (set by requireAuth on redirect).
  * If the user has a valid session, redirect to the ?next= destination.
- * If there is no session, do nothing and return false — the login form
- * will render, and the user will be redirected after successful sign-in
- * via the form submit handler.
  * @returns {boolean} true if a redirect was triggered
  */
 export async function handlePostLoginRedirect() {
   const params = new URLSearchParams(window.location.search);
   const next = params.get('next');
   if (!next || !next.startsWith('/')) return false;
-  // Only redirect if the user actually has a valid session.
-  // Without this check, an unauthenticated user redirected by requireAuth()
-  // on dashboard.html would loop back to dashboard immediately.
   const { session } = await getSession();
   if (!session) return false;
   setTimeout(() => { window.location.href = next; }, 200);
@@ -248,14 +215,14 @@ export async function handlePostLoginRedirect() {
 // ─── Auth gate ───────────────────────────────────────────────────────────────
 
 /**
- * Phase 2: Enforces that a valid session exists.
+ * Enforces that a valid session exists.
  * If no session, redirects to the login page and returns null.
  * @param {string} redirectTo
  * @param {string} returnTo
  * @returns {Promise<object|null>}
  */
 export async function requireAuth(redirectTo = '/index.html', returnTo = window.location.href) {
-  const { session } = await getSession();
+  const { session } = await getSession({ forceCheck: true });
   if (!session) {
     const target = new URL(redirectTo, window.location.origin);
     target.searchParams.set('next', returnTo);

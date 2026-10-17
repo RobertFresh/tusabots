@@ -3,15 +3,38 @@
 // Validates Bearer token against Supabase, returns user object or error response.
 
 /**
+ * Parse cookies from a cookie header string.
+ * @param {string} cookieHeader
+ * @returns {object}
+ */
+function parseCookies(cookieHeader) {
+  const cookies = {};
+  if (!cookieHeader) return cookies;
+  cookieHeader.split(';').forEach((pair) => {
+    const [key, ...rest] = pair.trim().split('=');
+    if (key) cookies[key.trim()] = decodeURIComponent(rest.join('='));
+  });
+  return cookies;
+}
+
+/**
  * @param {object} event — Netlify function event
  * @returns {{user: object|null, statusCode: number, body: string|null}}
  */
 async function validateAuth(event) {
-  const authHeader = event.headers['authorization'] || event.headers['Authorization'];
-  const bearerPresent = authHeader?.startsWith('Bearer ');
-  const token = bearerPresent ? authHeader.slice(7) : null;
+  // 1. Try httpOnly cookie first (new secure path)
+  const cookies = parseCookies(event.headers['cookie']);
+  let token = cookies['tusabots_access_token'] || null;
 
-  if (!authHeader || !bearerPresent) {
+  // 2. Fall back to Authorization: Bearer header (backward compat during transition)
+  if (!token) {
+    const authHeader = event.headers['authorization'] || event.headers['Authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.slice(7);
+    }
+  }
+
+  if (!token) {
     return {
       user: null,
       statusCode: 401,
