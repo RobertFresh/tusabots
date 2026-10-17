@@ -1,6 +1,7 @@
 // netlify/functions/upload.js
 // TusaBot file upload handler — validates session, writes to Supabase Storage
 const { createClient } = require('@supabase/supabase-js');
+const path = require('path');
 const { validateAuth, getUserId } = require('./auth-validate.js');
 
 // ─── Storage client (service role for file operations) ─────────────────────
@@ -36,28 +37,51 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Missing fileName or base64Data.' }) };
   }
 
+  // ── Security: sanitize filename (prevent path traversal) ──────────────
+  const safeName = path.basename(fileName).replace(/[^a-zA-Z0-9._-]/g, '_');
+  if (!safeName || safeName.startsWith('.')) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid file name.' }) };
+  }
+
+  // ── Security: file size limit (4MB base64 ≈ 3MB decoded) ─────────────
+  const MAX_BASE64_SIZE = 4 * 1024 * 1024;
+  if (base64Data.length > MAX_BASE64_SIZE) {
+    return { statusCode: 413, body: JSON.stringify({ error: 'File too large. Max 3MB.' }) };
+  }
+
+  // ── Security: file type allowlist ─────────────────────────────────────
+  const ALLOWED_TYPES = [
+    'image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml',
+    'application/pdf', 'text/plain', 'text/csv',
+  ];
+  const safeType = (fileType || '').toLowerCase();
+  if (!ALLOWED_TYPES.includes(safeType)) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'File type not allowed.' }) };
+  }
+
   if (!supabaseAdmin) {
     return { statusCode: 503, body: JSON.stringify({ error: 'Storage not configured.' }) };
   }
 
   const buffer = Buffer.from(base64Data, 'base64');
-  const path = `${userId}/${Date.now()}-${fileName}`;
+  const storagePath = `${userId}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await supabaseAdmin.storage
     .from('tusabot-files')
-    .upload(path, buffer, { contentType: fileType || 'application/octet-stream' });
+    .upload(storagePath, buffer, { contentType: safeType });
 
   if (uploadError) {
-    return { statusCode: 500, body: JSON.stringify({ error: uploadError.message }) };
+    console.error('[upload] Storage error:', uploadError.message);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Upload failed.' }) };
   }
 
-  const { data: urlData } = supabaseAdmin.storage.from('tusabot-files').getPublicUrl(path);
+  const { data: urlData } = supabaseAdmin.storage.from('tusabot-files').getPublicUrl(storagePath);
 
   // Record file metadata (fire-and-forget — log errors, don't block response)
   supabaseAdmin.from('files').insert({
     user_id: userId,
-    file_name: fileName,
-    file_type: fileType,
+    file_name: safeName,
+    file_type: safeType,
     storage_path: urlData.publicUrl
   }).catch(err => console.error('[upload/saveMeta FAILED]', err));
 

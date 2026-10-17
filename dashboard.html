@@ -480,16 +480,20 @@ window.isLoggedIn     = () => window.__TUSABOTS_SESSION__ !== null;
 
 function updateNav(email) {
   const navRight = document.getElementById('nav-right');
+  navRight.innerHTML = '';
   if (email) {
-    navRight.innerHTML =
-      `<span class="nav-user-email">${email}</span>` +
-      `<button class="nav-signout" id="nav-signout-btn">Sign out</button>`;
-    document.getElementById('nav-signout-btn').addEventListener('click', async () => {
+    const emailSpan = document.createElement('span');
+    emailSpan.className = 'nav-user-email';
+    emailSpan.textContent = email;
+    const signOutBtn = document.createElement('button');
+    signOutBtn.className = 'nav-signout';
+    signOutBtn.textContent = 'Sign out';
+    signOutBtn.addEventListener('click', async () => {
       await signOut();
       window.location.href = '/index.html';
     });
-  } else {
-    navRight.innerHTML = '';
+    navRight.appendChild(emailSpan);
+    navRight.appendChild(signOutBtn);
   }
 }
 </script>

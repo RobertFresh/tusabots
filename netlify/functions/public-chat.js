@@ -107,7 +107,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Visitor ID required.' }) };
   }
 
-  const clientIp = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown').split(',')[0].trim();
+  const clientIp = (event.headers['x-nf-client-connection-ip'] || event.headers['x-forwarded-for'] || event.headers['client-ip'] || 'unknown').split(',')[0].trim();
 
   // ── Anti-flood: throttle inserts per IP (protects the DB + Netlify invocations) ──
   // Skipped in HQ mode (authenticated user, not a random visitor).
@@ -233,7 +233,10 @@ exports.handler = async (event) => {
   // ── Build conversation for Claude ───────────────────────────────────────────
   // HQ mode: include rolling history for a real conversation.
   // Public mode: single message + memory note (no history, line-by-line).
-  const hqHistory = Array.isArray(body.history) ? body.history.slice(-20) : [];
+  const hqHistory = (Array.isArray(body.history) ? body.history : [])
+    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+    .map(m => ({ role: m.role, content: String(m.content).slice(0, 2000) }))
+    .slice(-20);
 
   let memoryNote = '';
   if (!hqAuth && profile && profile.msg_count > 1) {

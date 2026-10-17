@@ -93,7 +93,7 @@ async function countRecentUserMessages(userId, sinceIso) {
     .gte('created_at', sinceIso);
   if (error) {
     console.error('[memory/countRecentUserMessages] query failed:', error.message);
-    return 0; // fail open — never block a paying user because a count errored
+    return 999; // fail CLOSED — deny if we can't verify the limit
   }
   return count || 0;
 }
