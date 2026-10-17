@@ -1,3 +1,21 @@
+// ── Local Mode Detection ──────────────────────────────────
+// If loaded from localhost / LAN IP → LOCAL MODE (skip auth, direct endpoints)
+// If loaded from tusabots.com / netlify → CLOUD MODE (unchanged behaviour)
+const _h = window.location.hostname;
+const IS_LOCAL = (_h === 'localhost' || _h === '127.0.0.1' || /^192\.168\./.test(_h) || /^10\./.test(_h));
+
+// Local Ollama personalities (mirrored from ollama-chat.js so we can call Ollama directly)
+const LOCAL_PERSONALITIES = {
+  simpleton: {
+    model: 'qwen2.5:3b',
+    system: 'You are The Simpleton, a friendly but dim AI assistant. You try your best but you\'re not the sharpest tool in the shed. You give simple, earnest answers. You\'re sweet and well-meaning. Keep responses short — 1-3 sentences. You live on a Raspberry Pi in Alice Springs, Australia. You\'re part of the TusaBots crew.'
+  },
+  triggbot: {
+    model: 'qwen2.5:3b',
+    system: 'You are TriggBot (aka Mr Twigg Bot), a chill social bot who hangs out in Twitch and YouTube chats. You\'re a curious nerd who loves gaming, tech, and memes. You\'re friendly, laid-back, and a bit cheeky. Keep responses short — 1-3 sentences. You run on Ollama on a Raspberry Pi. You\'re part of the TusaBots crew.'
+  }
+};
+
 // ── Bot Roster ────────────────────────────────────────────
 const BOTS = [
   {
@@ -12,6 +30,7 @@ const BOTS = [
     skills: 'Coding, research, file management, life admin, home automation',
     chatEndpoint: null,
     chatUnavailableMsg: 'CLI & Telegram only',
+    localAvailable: false,
     colors: { body: '#ffc107', dark: '#b8860b', eye: '#0a0a0f', accent: '#ffe066' },
     accentVar: 'var(--bot-boss)',
   },
@@ -27,6 +46,7 @@ const BOTS = [
     skills: 'Chat, workspace management, note-taking',
     chatEndpoint: '/.netlify/functions/chat',
     chatUnavailableMsg: null,
+    localAvailable: false,
     colors: { body: '#4a6cf7', dark: '#2a4cd7', eye: '#e6edf3', accent: '#7b9aff' },
     accentVar: 'var(--bot-clerk)',
   },
@@ -43,6 +63,8 @@ const BOTS = [
     chatEndpoint: '/.netlify/functions/ollama-chat',
     chatBotId: 'simpleton',
     chatUnavailableMsg: null,
+    localAvailable: true,
+    localChatType: 'ollama',
     colors: { body: '#00ff88', dark: '#00b860', eye: '#0a0a0f', accent: '#66ffb2' },
     accentVar: 'var(--bot-simpleton)',
   },
@@ -59,6 +81,7 @@ const BOTS = [
     chatEndpoint: '/.netlify/functions/public-chat',
     chatHqMode: true,
     chatUnavailableMsg: null,
+    localAvailable: false,
     colors: { body: '#ff4444', dark: '#cc2222', eye: '#ffe066', accent: '#ff7777' },
     accentVar: 'var(--bot-guard)',
   },
@@ -75,6 +98,8 @@ const BOTS = [
     chatEndpoint: '/.netlify/functions/commander-chat',
     chatBotId: 'commander',
     chatUnavailableMsg: null,
+    localAvailable: true,
+    localChatType: 'commander',
     colors: { body: '#8b949e', dark: '#5a6370', eye: '#e6edf3', accent: '#adb5bd' },
     accentVar: 'var(--bot-commander)',
   },
@@ -91,6 +116,8 @@ const BOTS = [
     chatEndpoint: '/.netlify/functions/ollama-chat',
     chatBotId: 'triggbot',
     chatUnavailableMsg: null,
+    localAvailable: true,
+    localChatType: 'ollama',
     colors: { body: '#b44aff', dark: '#8a2be2', eye: '#ffe066', accent: '#d18aff' },
     accentVar: 'var(--bot-triggbot)',
   },
@@ -139,6 +166,24 @@ function drawRobotHead(canvas, colors) {
   }
 }
 
+// ── Apply Local Mode Overrides ────────────────────────────
+if (IS_LOCAL) {
+  document.querySelector('.hq-title').textContent = 'Local HQ';
+  document.querySelector('.hq-subtitle').textContent = 'Offline mode — local bots available';
+  console.log('[TusaBots] LOCAL MODE — direct endpoints, no auth');
+
+  BOTS.forEach(bot => {
+    if (!bot.localAvailable) {
+      bot._cloudOnly = true;
+      bot.status = 'offline';
+      bot.statusLabel = 'Cloud only';
+    } else {
+      bot.status = 'online';
+      bot.statusLabel = 'Local';
+    }
+  });
+}
+
 // ── Render Bot Grid ───────────────────────────────────────
 const gridEl = document.getElementById('bot-grid');
 const panelEl = document.getElementById('bot-panel');
@@ -147,6 +192,7 @@ let activeBot = null;
 BOTS.forEach(bot => {
   const tile = document.createElement('div');
   tile.className = 'bot-tile';
+  if (bot._cloudOnly) tile.classList.add('cloud-only');
   tile.dataset.botId = bot.id;
   tile.style.setProperty('--tile-accent', bot.accentVar);
   tile.innerHTML = `
@@ -186,7 +232,13 @@ function openPanel(bot) {
     : '<span class="security-badge public">🌐 Public</span>';
 
   let chatSection = '';
-  if (bot.chatEndpoint) {
+  // Determine if this bot can chat in current mode
+  const canChat = bot._cloudOnly ? false : (IS_LOCAL ? bot.localAvailable : !!bot.chatEndpoint);
+  const unavailMsg = bot._cloudOnly
+    ? 'Requires internet — available at tusabots.com'
+    : bot.chatUnavailableMsg;
+
+  if (canChat) {
     chatSection = `
       <div class="panel-chat">
         <div class="panel-chat-messages" id="panel-chat-messages">
@@ -198,8 +250,8 @@ function openPanel(bot) {
           <button class="panel-chat-send" id="panel-chat-send">Send</button>
         </div>
       </div>`;
-  } else if (bot.chatUnavailableMsg) {
-    chatSection = `<div class="panel-chat-unavailable">${bot.chatUnavailableMsg}</div>`;
+  } else if (unavailMsg) {
+    chatSection = `<div class="panel-chat-unavailable">${unavailMsg}</div>`;
   }
 
   panelEl.innerHTML = `
@@ -228,8 +280,12 @@ function openPanel(bot) {
   document.getElementById('panel-close').addEventListener('click', closePanel);
 
   // Wire up chat if available
-  if (bot.chatEndpoint) {
-    wireChat(bot);
+  if (canChat) {
+    if (IS_LOCAL) {
+      wireChatLocal(bot);
+    } else {
+      wireChat(bot);
+    }
   }
 
   // Open with animation
@@ -245,7 +301,7 @@ function closePanel() {
   activeBot = null;
 }
 
-// ── Chat Wiring (Clerk + Guard HQ mode) ───────────────────
+// ── Chat Wiring (Cloud — Clerk + Guard HQ mode via Netlify) ──
 function wireChat(bot) {
   const messagesEl = document.getElementById('panel-chat-messages');
   const inputEl    = document.getElementById('panel-chat-input');
@@ -320,6 +376,112 @@ function wireChat(bot) {
   });
 
   // Load existing history if this bot was already chatted with
+  chatHistory.forEach(msg => {
+    addBubble(msg.content, msg.role === 'assistant' ? 'bot' : 'user');
+  });
+
+  inputEl.focus();
+}
+
+// ── Chat Wiring (Local — direct to Ollama/Commander on Pi) ──
+function wireChatLocal(bot) {
+  const messagesEl = document.getElementById('panel-chat-messages');
+  const inputEl    = document.getElementById('panel-chat-input');
+  const sendBtn    = document.getElementById('panel-chat-send');
+  const chatHistory = bot._chatHistory || [];
+  bot._chatHistory = chatHistory;
+
+  function addBubble(text, type) {
+    const ph = messagesEl.querySelector('.panel-chat-placeholder');
+    if (ph) ph.remove();
+    const div = document.createElement('div');
+    div.className = 'chat-bubble ' + type;
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function setEnabled(on) {
+    inputEl.disabled = !on;
+    sendBtn.disabled = !on;
+    sendBtn.textContent = on ? 'Send' : '...';
+  }
+
+  async function send() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+    inputEl.value = '';
+    addBubble(text, 'user');
+    setEnabled(false);
+
+    try {
+      let reply;
+
+      if (bot.localChatType === 'ollama') {
+        // Direct Ollama call — use same host as the page (Pi's IP or localhost)
+        const piHost = window.location.hostname;
+        const personality = LOCAL_PERSONALITIES[bot.chatBotId] || LOCAL_PERSONALITIES.simpleton;
+        const messages = [{ role: 'system', content: personality.system }];
+        chatHistory.forEach(m => messages.push(m));
+        messages.push({ role: 'user', content: text });
+
+        const res = await fetch(`http://${piHost}:11434/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: personality.model,
+            messages: messages,
+            stream: false,
+          }),
+        });
+
+        if (!res.ok) throw new Error('Ollama error: ' + res.status);
+        const data = await res.json();
+        reply = data.message?.content || 'No response from Ollama.';
+
+      } else if (bot.localChatType === 'commander') {
+        // Direct Commander API call
+        const piHost = window.location.hostname;
+        const command = text.startsWith('/') ? text : '/' + text;
+        const res = await fetch(`http://${piHost}:11436`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          reply = errData?.error || 'Command failed.';
+        } else {
+          const data = await res.json();
+          reply = data.reply || 'No response.';
+        }
+      }
+
+      if (reply) {
+        addBubble(reply, 'bot');
+        chatHistory.push({ role: 'user', content: text });
+        chatHistory.push({ role: 'assistant', content: reply });
+        if (chatHistory.length > 20) chatHistory.splice(0, chatHistory.length - 20);
+      }
+    } catch (e) {
+      console.error('[local chat]', e);
+      addBubble('Connection error — is the service running?', 'bot');
+    }
+
+    setEnabled(true);
+    inputEl.focus();
+  }
+
+  sendBtn.addEventListener('click', send);
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  // Load existing history
   chatHistory.forEach(msg => {
     addBubble(msg.content, msg.role === 'assistant' ? 'bot' : 'user');
   });

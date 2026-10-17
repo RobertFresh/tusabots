@@ -369,6 +369,19 @@ footer {
   flex-shrink: 0;
 }
 
+/* ── Cloud-only dimming (local mode) ───────────────────── */
+.bot-tile.cloud-only {
+  opacity: 0.35;
+  filter: grayscale(0.7);
+  cursor: default;
+}
+
+.bot-tile.cloud-only:hover {
+  transform: none;
+  border-color: var(--glass-border);
+  box-shadow: none;
+}
+
 /* ── Float animation for bot heads ─────────────────────── */
 @keyframes botFloat {
   0%, 100% { transform: translateY(0); }
@@ -435,9 +448,37 @@ footer {
   <p>TusaBots © 2026</p>
 </footer>
 
-<!-- ── Auth (same as original dashboard) ──────────────── -->
+<!-- ── Auth (conditional: skip in local mode) ──────────── -->
+<script>
+  // Local mode detection (must run before auth module)
+  const _hn = window.location.hostname;
+  const _isLocal = (_hn === 'localhost' || _hn === '127.0.0.1' || /^192\.168\./.test(_hn) || /^10\./.test(_hn));
 
-<script type="module" src="/js/dashboard-auth.js"></script>
+  if (_isLocal) {
+    // No Supabase auth needed on LAN — provide stubs
+    window.authFetch = (url, opts) => fetch(url, opts);
+    window.getCurrentUser = () => ({ email: 'local@pi' });
+    window.isLoggedIn = () => true;
+
+    // Show nav for local mode
+    const navRight = document.getElementById('nav-right');
+    const badge = document.createElement('span');
+    badge.className = 'nav-user-email';
+    badge.textContent = '📡 Local Mode';
+    navRight.appendChild(badge);
+  }
+</script>
+<script>
+  if (!window._isLocalDefined) { window._isLocalDefined = true; }
+  const _skipAuth = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || /^192\.168\./.test(window.location.hostname) || /^10\./.test(window.location.hostname));
+  if (!_skipAuth) {
+    // Cloud mode — load the real auth module
+    const s = document.createElement('script');
+    s.type = 'module';
+    s.src = '/js/dashboard-auth.js';
+    document.head.appendChild(s);
+  }
+</script>
 
 <!-- ── Bot Data + Pixel Art + Panel Logic ─────────────── -->
 <script src="/js/dashboard-bots.js"></script>
