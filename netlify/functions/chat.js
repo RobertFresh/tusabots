@@ -156,7 +156,7 @@ exports.handler = async (event) => {
   });
 
   // Step 6: Call AI via OpenRouter (OpenAI-compatible)
-  const clerkModel = process.env.CLERK_MODEL || 'anthropic/claude-sonnet-4';
+  const clerkModel = process.env.CLERK_MODEL || 'anthropic/claude-sonnet-4.6';
   const orMessages = [
     { role: 'system', content: system },
     ...messages
