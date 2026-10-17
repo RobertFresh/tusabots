@@ -69,10 +69,10 @@ const BOTS = [
     accentVar: 'var(--bot-simpleton)',
   },
   {
-    id: 'guard',
-    name: 'The Guard',
+    id: 'unit-7',
+    name: 'Unit-7',
     model: 'Claude Haiku',
-    role: 'Public-facing — greets visitors, guards the door',
+    role: 'Public-facing — front desk, greets visitors',
     security: 'public',
     status: 'cloud',
     statusLabel: 'Online (cloud)',
@@ -83,7 +83,7 @@ const BOTS = [
     chatUnavailableMsg: null,
     localAvailable: false,
     colors: { body: '#ff4444', dark: '#cc2222', eye: '#ffe066', accent: '#ff7777' },
-    accentVar: 'var(--bot-guard)',
+    accentVar: 'var(--bot-unit7)',
   },
   {
     id: 'commander',

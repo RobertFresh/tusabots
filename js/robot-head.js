@@ -1,41 +1,75 @@
+// Pixel-art Unit-7 head renderer for the landing page.
+// Same 11x11 grid as the dashboard tile, scaled up (16px per pixel = 176x176 canvas).
+// Animations: eye blink every 3-5s, mouth toggles open/closed while talking.
 (function(){
-  const svg = document.getElementById('robot-svg');
-  const mouth = document.getElementById('robot-mouth');
-  const eyeL = document.getElementById('eye-l');
-  const eyeR = document.getElementById('eye-r');
-  if (!svg || !mouth) return;
+  const canvas = document.getElementById('robot-canvas');
+  if (!canvas) return;
+  const S = 16; // pixel scale (canvas is 11*16 = 176)
+  const ctx = canvas.getContext('2d');
 
-  // Mouth shapes (SVG path d-attributes). Closed = gentle smile; open frames
-  // = speaking. We cycle through the open frames while talking.
-  const MOUTH_SMILE = 'M 82 138 Q 100 150 118 138';                 // resting smile
-  const MOUTH_OPEN  = 'M 84 134 Q 100 162 116 134 Q 100 150 84 134';// wide open oval
-  const MOUTH_MID   = 'M 84 137 Q 100 150 116 137 Q 100 144 84 137';// half open
-  const TALK_FRAMES = [MOUTH_OPEN, MOUTH_MID, MOUTH_SMILE, MOUTH_MID];
+  // Unit-7 colour palette (matches dashboard-bots.js guard/unit-7 colours)
+  const COLORS = {
+    body:   '#ff4444',
+    dark:   '#cc2222',
+    eye:    '#ffe066',
+    accent: '#ff7777',
+    mouth:  '#cc2222',
+  };
 
-  let talking = false, talkTimer = null, frame = 0, blinkTimeout = null;
+  // 11x11 grid: 0=empty, 1=body, 2=dark(frame), 3=eye, 4=accent, 5=mouth
+  const BASE_GRID = [
+    [0,0,0,0,2,4,2,0,0,0,0],  // antenna
+    [0,0,0,0,0,4,0,0,0,0,0],  // antenna stem
+    [0,0,2,2,2,2,2,2,2,0,0],  // top of head
+    [0,2,1,1,1,1,1,1,1,2,0],  // upper head
+    [0,2,1,3,1,1,1,3,1,2,0],  // eyes row
+    [0,2,1,3,1,1,1,3,1,2,0],  // eyes row 2
+    [0,2,1,1,1,1,1,1,1,2,0],  // mid face
+    [0,2,1,1,5,5,5,1,1,2,0],  // mouth
+    [0,2,1,1,1,1,1,1,1,2,0],  // lower face
+    [0,0,2,2,2,2,2,2,2,0,0],  // chin
+    [0,0,0,2,1,1,1,2,0,0,0],  // neck
+  ];
 
-  function startTalking() {
-    if (talking) return;
-    talking = true; frame = 0;
-    talkTimer = setInterval(() => {
-      mouth.setAttribute('d', TALK_FRAMES[frame % TALK_FRAMES.length]);
-      frame++;
+  // Deep-copy grid for animation state
+  let grid = BASE_GRID.map(r => [...r]);
+
+  const colorMap = {
+    0: null, // transparent
+    1: COLORS.body,
+    2: COLORS.dark,
+    3: COLORS.eye,
+    4: COLORS.accent,
+    5: COLORS.mouth,
+  };
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < 11; y++) {
+      for (let x = 0; x < 11; x++) {
+        const c = colorMap[grid[y][x]];
+        if (!c) continue;
+        ctx.fillStyle = c;
+        ctx.fillRect(x * S, y * S, S, S);
+      }
+    }
+  }
+
+  // ── Blink animation ──────────────────────────────────────────────────────
+  let blinkTimeout = null;
+
+  function blink() {
+    // Squash eyes: turn eye pixels (row 4-5, cols 3+7) to body colour
+    grid[4][3] = 1; grid[4][7] = 1;
+    grid[5][3] = 1; grid[5][7] = 1;
+    draw();
+    setTimeout(() => {
+      grid[4][3] = 3; grid[4][7] = 3;
+      grid[5][3] = 3; grid[5][7] = 3;
+      draw();
     }, 130);
   }
-  function stopTalking() {
-    talking = false;
-    clearInterval(talkTimer); talkTimer = null;
-    mouth.setAttribute('d', MOUTH_SMILE);
-  }
 
-  // Reusable blink: squash both eyes briefly.
-  function blink() {
-    if (!eyeL || !eyeR) return;
-    eyeL.setAttribute('ry', '1'); eyeR.setAttribute('ry', '1');
-    setTimeout(() => { eyeL.setAttribute('ry', '7'); eyeR.setAttribute('ry', '7'); }, 130);
-  }
-
-  // Idle auto-blink every 3-5s (skip while talking).
   function scheduleBlink() {
     const delay = 3000 + Math.random() * 2000;
     blinkTimeout = setTimeout(() => {
@@ -45,70 +79,44 @@
   }
   scheduleBlink();
 
-  // Expose for chat logic (unchanged contract: startTalking / stopTalking)
+  // ── Talk animation (mouth toggles) ───────────────────────────────────────
+  let talking = false, talkTimer = null, mouthOpen = false;
+
+  function startTalking() {
+    if (talking) return;
+    talking = true;
+    mouthOpen = false;
+    talkTimer = setInterval(() => {
+      mouthOpen = !mouthOpen;
+      // Open mouth = widen mouth pixels; closed = normal
+      if (mouthOpen) {
+        // Open: extend mouth to rows 7-8
+        grid[7][4] = 5; grid[7][5] = 5; grid[7][6] = 5;
+        grid[8][4] = 5; grid[8][5] = 5; grid[8][6] = 5;
+      } else {
+        // Closed: restore row 8 to body
+        grid[8][4] = 1; grid[8][5] = 1; grid[8][6] = 1;
+        grid[7][4] = 5; grid[7][5] = 5; grid[7][6] = 5;
+      }
+      draw();
+    }, 180);
+  }
+
+  function stopTalking() {
+    talking = false;
+    clearInterval(talkTimer); talkTimer = null;
+    // Reset mouth to base
+    grid[7][4] = 5; grid[7][5] = 5; grid[7][6] = 5;
+    grid[8][4] = 1; grid[8][5] = 1; grid[8][6] = 1;
+    draw();
+  }
+
+  // Expose for public-chat.js (same contract as the old SVG version)
   window.robotHead = { startTalking, stopTalking };
 
-  // ── Interactivity: works with mouse AND touch (unified pointer events) ──
-  //   • click-hold + drag  → rotates the head with the cursor/finger
-  //   • double-click / double-tap → full 360° spin
-  //   • single tap/click on an eye → blink
-  let rotation = 0, dragging = false, dragStartAngle = 0, rotAtDragStart = 0, moved = false;
-  let lastTapTime = 0;
+  // ── Click to blink (fun interaction) ─────────────────────────────────────
+  canvas.addEventListener('click', () => { blink(); });
 
-  function angleFromCenter(x, y) {
-    const rect = svg.getBoundingClientRect();
-    return Math.atan2(y - (rect.top + rect.height/2), x - (rect.left + rect.width/2)) * 180 / Math.PI;
-  }
-  function apply() { svg.style.transform = 'rotate(' + rotation + 'deg)'; }
-  function spin() { rotation += 360; apply(); }
-
-  // Map a screen point to SVG user coordinates (accounts for CSS rotation),
-  // so we can tell whether a tap landed on an eye even when the head is spun.
-  function isEyeTap(clientX, clientY) {
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return false;
-    const pt = svg.createSVGPoint(); pt.x = clientX; pt.y = clientY;
-    const p = pt.matrixTransform(ctm.inverse());
-    const HIT = 26; // generous tap radius in viewBox units (eyes are small)
-    const dL = Math.hypot(p.x - 80, p.y - 106);
-    const dR = Math.hypot(p.x - 120, p.y - 106);
-    return dL < HIT || dR < HIT;
-  }
-
-  svg.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    dragging = true; moved = false;
-    dragStartAngle = angleFromCenter(e.clientX, e.clientY);
-    rotAtDragStart = rotation;
-    svg.classList.add('dragging');
-    try { svg.setPointerCapture(e.pointerId); } catch (_) {}
-  });
-  svg.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const delta = angleFromCenter(e.clientX, e.clientY) - dragStartAngle;
-    if (Math.abs(delta) > 3) moved = true;
-    rotation = rotAtDragStart + delta;
-    apply();
-  });
-  function endDrag(e) {
-    if (!dragging) return;
-    dragging = false;
-    svg.classList.remove('dragging');
-    try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
-
-    if (moved) return; // it was a drag, not a tap — do nothing extra
-
-    // It was a tap/click. Eye tap → blink.
-    if (isEyeTap(e.clientX, e.clientY)) { blink(); lastTapTime = 0; return; }
-
-    // Otherwise, detect a double-tap (mainly for touch, where dblclick is flaky).
-    const now = Date.now();
-    if (now - lastTapTime < 320) { spin(); lastTapTime = 0; }
-    else { lastTapTime = now; }
-  }
-  svg.addEventListener('pointerup', endDrag);
-  svg.addEventListener('pointercancel', endDrag);
-
-  // Desktop double-click (redundant with double-tap, but snappier with a mouse).
-  svg.addEventListener('dblclick', () => { if (!moved) spin(); });
+  // Initial draw
+  draw();
 })();

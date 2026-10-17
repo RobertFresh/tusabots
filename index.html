@@ -65,13 +65,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-
 /* Input area */
 .chat-input-area{display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1rem;border-top:1px solid var(--glass-border);flex-shrink:0}
 
-/* Massive themed robot head (adapted from the Tusabot prototype) */
+/* Pixel-art robot head canvas (matches dashboard Unit-7 tile, scaled up) */
 .robot-hero{flex:0 0 auto;display:flex;justify-content:center;align-items:flex-end;width:100%;margin-bottom:0.4rem;pointer-events:none;animation:headFloat 4s ease-in-out infinite}
-.robot-svg{width:clamp(150px,32vw,300px);height:auto;cursor:grab;transform-origin:center center;pointer-events:auto;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.55));transition:transform 0.7s cubic-bezier(0.34,1.56,0.64,1);-webkit-user-select:none;user-select:none;touch-action:none}
-.robot-svg.dragging{cursor:grabbing;transition:none}
+.robot-canvas{width:clamp(120px,26vw,220px);height:auto;aspect-ratio:1;image-rendering:pixelated;pointer-events:auto;filter:drop-shadow(0 4px 16px rgba(255,68,68,0.35)) drop-shadow(0 0 8px rgba(255,68,68,0.2));cursor:pointer;-webkit-user-select:none;user-select:none}
 @keyframes headFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-.robot-glow{filter:drop-shadow(0 0 4px var(--accent-amber)) drop-shadow(0 0 8px rgba(245,166,35,0.7))}
-@media (max-width:900px){.robot-svg{width:clamp(120px,34vw,220px)}}
+@media (max-width:900px){.robot-canvas{width:clamp(80px,24vw,160px)}}
 
 .chat-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:0.6rem 0.85rem;color:var(--text-primary);font-size:16px;font-family:inherit;outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
 .chat-input::placeholder{color:var(--text-muted)}
@@ -121,7 +119,7 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
   .stream-layout{flex-direction:column;max-height:none;height:100%;gap:0.5rem}
   /* Head shrinks to a capped band on mobile so the chat always keeps room. */
   .robot-hero{flex:0 1 auto;min-height:0;margin-bottom:0.2rem}
-  .robot-svg{max-height:22vh;width:auto}
+  .robot-canvas{max-height:18vh;width:auto}
   /* Chat fills all available height; min-height:0 lets its inner list scroll. */
   .public-chat{flex:1 1 auto;width:100%;max-width:none;min-height:0}
   .chat-messages{flex:1 1 auto;min-height:0}
@@ -175,71 +173,7 @@ footer{position:relative;z-index:1;text-align:center;padding:0.75rem 1rem;color:
 <!-- Main content: full-page group chat (Twitch removed) -->
 <div class="main-content">
   <div class="robot-hero">
-    <svg class="robot-svg" id="robot-svg" viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Unit-7 the front-desk robot">
-      <defs>
-        <radialGradient id="headGrad" cx="38%" cy="32%" r="75%">
-          <stop offset="0%" stop-color="#4a3a28"/>
-          <stop offset="45%" stop-color="#2a2018"/>
-          <stop offset="100%" stop-color="#14100b"/>
-        </radialGradient>
-        <linearGradient id="domeGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#3a2c1c"/>
-          <stop offset="100%" stop-color="#1c150e"/>
-        </linearGradient>
-        <linearGradient id="neckGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#2a2018"/>
-          <stop offset="100%" stop-color="#120d08"/>
-        </linearGradient>
-        <radialGradient id="faceGrad" cx="50%" cy="45%" r="60%">
-          <stop offset="0%" stop-color="#0a0806"/>
-          <stop offset="100%" stop-color="#000000"/>
-        </radialGradient>
-      </defs>
-
-      <!-- Antennae (V-shape with ball tips) -->
-      <g stroke="#c9741f" stroke-width="3" stroke-linecap="round">
-        <line x1="82" y1="34" x2="66" y2="8"/>
-        <line x1="118" y1="34" x2="134" y2="8"/>
-      </g>
-      <circle cx="66" cy="8" r="6" fill="#f5a623" class="robot-glow"/>
-      <circle cx="134" cy="8" r="6" fill="#f5a623" class="robot-glow"/>
-
-      <!-- Segmented neck behind head -->
-      <g>
-        <rect x="80" y="170" width="40" height="60" rx="8" fill="url(#neckGrad)"/>
-        <rect x="80" y="182" width="40" height="4" fill="#3a2c1c" opacity="0.7"/>
-        <rect x="80" y="196" width="40" height="4" fill="#3a2c1c" opacity="0.7"/>
-        <rect x="80" y="210" width="40" height="4" fill="#3a2c1c" opacity="0.7"/>
-      </g>
-
-      <!-- Side ears -->
-      <ellipse cx="28" cy="118" rx="12" ry="20" fill="#2a2018" stroke="#3a2c1c" stroke-width="2"/>
-      <ellipse cx="172" cy="118" rx="12" ry="20" fill="#2a2018" stroke="#3a2c1c" stroke-width="2"/>
-      <ellipse cx="28" cy="118" rx="5" ry="11" fill="#c9741f" opacity="0.5"/>
-      <ellipse cx="172" cy="118" rx="5" ry="11" fill="#c9741f" opacity="0.5"/>
-
-      <!-- Main head sphere -->
-      <circle cx="100" cy="112" r="72" fill="url(#headGrad)" stroke="#3a2c1c" stroke-width="2"/>
-
-      <!-- Dome cap over the top ~35% -->
-      <path d="M 34 96 A 72 72 0 0 1 166 96 A 66 40 0 0 0 34 96 Z" fill="url(#domeGrad)" stroke="#3a2c1c" stroke-width="1.5"/>
-      <path d="M 40 92 A 62 62 0 0 1 160 92" fill="none" stroke="#5a4326" stroke-width="1.5" opacity="0.6"/>
-
-      <!-- Recessed dark face screen -->
-      <ellipse cx="100" cy="120" rx="52" ry="48" fill="url(#faceGrad)"/>
-
-      <!-- Glowing amber eyes -->
-      <g class="robot-glow" fill="#f5a623">
-        <ellipse id="eye-l" cx="80" cy="106" rx="11" ry="7"/>
-        <ellipse id="eye-r" cx="120" cy="106" rx="11" ry="7"/>
-      </g>
-
-      <!-- Glowing amber mouth (animated) -->
-      <path id="robot-mouth" class="robot-glow" d="M 82 138 Q 100 150 118 138" fill="none" stroke="#f5a623" stroke-width="5" stroke-linecap="round"/>
-
-      <!-- Chest badge hint on the neck -->
-      <rect x="92" y="216" width="16" height="10" rx="2" fill="#c9741f" opacity="0.35"/>
-    </svg>
+    <canvas class="robot-canvas" id="robot-canvas" width="176" height="176" role="img" aria-label="Unit-7 the front-desk robot"></canvas>
   </div>
   <div class="stream-layout">
     <div class="public-chat" id="public-chat">
